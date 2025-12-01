@@ -169,7 +169,7 @@ spec:
 
 **Current Status**: Pre-alpha / Planning
 
-See [PRD.md](PRD.md) for detailed requirements and roadmap.
+See [docs/O2OPERATOR_FEATURES.md](O2OPERATOR_FEATURES.md) for detailed features.
 
 ## License
 
