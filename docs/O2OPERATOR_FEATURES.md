@@ -242,6 +242,128 @@ Manages data processing pipelines with advanced transformation capabilities.
 - **Pagination Support**: Ready for large-scale deployments
 - **Bulk Operations**: Designed for batch processing capabilities
 
+## 🚧 Development In-Progress
+
+The following features are currently under active development and will be available in upcoming releases:
+
+### OpenObserveFunctions (o2function)
+
+A new Custom Resource Definition for managing OpenObserve transformation functions as Kubernetes resources.
+
+**Planned Features:**
+- **VRL Function Management**: Deploy and manage Vector Remap Language (VRL) functions
+- **JavaScript Functions**: Support for JavaScript-based transformation functions
+- **Function Libraries**: Organize functions into reusable libraries
+- **Version Control**: Track function versions and rollback capabilities
+- **Testing Framework**: Built-in testing support for functions
+- **Performance Metrics**: Monitor function execution performance
+- **Dependency Management**: Handle function dependencies and imports
+- **Hot Reload**: Update functions without pipeline disruption
+
+**Use Cases:**
+- Data transformation and enrichment
+- Custom parsing logic
+- Field extraction and manipulation
+- Data validation and filtering
+- Format conversion
+- Custom aggregations
+- Pipeline data processing
+- Alert condition evaluation
+
+### OpenObserveAlertDestinations (o2alertdest)
+
+A dedicated Custom Resource for managing alert notification destinations as independent resources.
+
+**Planned Features:**
+- **Destination Types**:
+  - Slack channels
+  - Email (SMTP)
+  - PagerDuty
+  - OpsGenie
+  - Microsoft Teams
+  - Webhooks
+  - Discord
+  - Telegram
+  - Custom HTTP endpoints
+
+- **Configuration Management**:
+  - Centralized credential storage
+  - Template management for notifications
+  - Custom formatting per destination
+  - Rate limiting and throttling
+  - Retry policies
+  - Delivery confirmation tracking
+
+- **Advanced Features**:
+  - Alert routing rules
+  - Severity-based filtering
+  - Time-based routing (business hours, on-call schedules)
+  - Alert aggregation and batching
+  - Escalation policies
+  - Acknowledgment tracking
+  - Two-way integrations
+
+**Integration with Alerts:**
+- Reference destinations by name in alert configurations
+- Share destinations across multiple alerts
+- Dynamic destination selection based on alert attributes
+- Multi-channel notifications
+- Fallback destination support
+
+### OpenObserveRemoteDestinations (o2remotedest)
+
+A Custom Resource for managing remote data destinations for pipelines and data export.
+
+**Planned Features:**
+- **Destination Types**:
+  - OpenObserve clusters (cross-cluster replication)
+  - Object storage (S3, GCS, Azure Blob Storage)
+  - Message queues (Kafka, RabbitMQ, Amazon SQS, Azure Service Bus)
+  - Time-series databases (InfluxDB, Prometheus, VictoriaMetrics)
+  - Data warehouses (Snowflake, BigQuery, Redshift)
+  - Elasticsearch/OpenSearch clusters
+  - Splunk instances
+  - DataDog, New Relic, Grafana Cloud
+
+- **Data Management**:
+  - Batch and streaming modes
+  - Data format conversion (JSON, Parquet, Avro, CSV)
+  - Compression options (gzip, snappy, zstd)
+  - Partitioning strategies
+  - Schema management
+  - Data retention policies
+
+- **Reliability Features**:
+  - Dead letter queue support
+  - Circuit breaker patterns
+  - Automatic retries with exponential backoff
+  - Connection pooling
+  - Health checks and monitoring
+  - Automatic failover to backup destinations
+  - Data buffering and queuing
+
+- **Security & Compliance**:
+  - End-to-end encryption
+  - Authentication mechanisms (OAuth2, API keys, mTLS, IAM roles)
+  - Data masking and PII redaction
+  - Audit logging for data transfers
+  - Compliance metadata tagging
+  - Data residency controls
+
+**Integration with Pipelines:**
+- Reference remote destinations in pipeline outputs
+- Share destinations across multiple pipelines
+- Conditional routing based on data attributes
+- Load balancing across multiple instances
+- Data replication and fan-out patterns
+
+
+### Community Feedback
+
+We welcome community input on these upcoming features. Please share your use cases and requirements through:
+- GitHub Issues for feature requests [open an issue](https://github.com/openobserve/o2-k8s-operator/issues)
+- Community forums for discussions [Start the conversation →](https://short.openobserve.ai/community)
+
 ## Summary
 
 The OpenObserve Kubernetes Operator provides a robust, enterprise-ready solution for managing observability configurations at scale. With its comprehensive feature set, it enables teams to:
