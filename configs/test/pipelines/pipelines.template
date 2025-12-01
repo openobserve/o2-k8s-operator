@@ -1,0 +1,986 @@
+# ============================================================================
+# OpenObserve Pipeline Template - Complete Reference Guide
+# ============================================================================
+# This template provides a comprehensive reference for creating OpenObserve pipelines
+# with all available fields and their validation requirements.
+#
+# Version: v1alpha1
+# Last Updated: 2024-11-29
+#
+# IMPORTANT NOTES:
+# - Pipelines define data transformation and routing workflows in OpenObserve
+# - Data flows from source → through nodes → to destination
+# - Nodes are connected by edges to form a directed graph
+# - Fields marked (Required) must be present for the pipeline to be valid
+# - Fields marked (Optional) can be omitted and will use default values
+# ============================================================================
+
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObservePipeline
+metadata:
+  name: <pipeline-resource-name>  # Kubernetes resource name (lowercase, alphanumeric, hyphens)
+  namespace: <namespace>           # Target namespace for the pipeline resource
+spec:
+  # ============================================================================
+  # CONFIGURATION REFERENCE (Required)
+  # Links this pipeline to an OpenObserve instance configuration
+  # ============================================================================
+  configRef:
+    name: <config-name>         # Name of the OpenObserveConfig resource (Required)
+    namespace: <namespace>      # Namespace of the config (Optional, defaults to pipeline namespace)
+
+  # ============================================================================
+  # PIPELINE IDENTIFICATION & BASIC SETTINGS
+  # ============================================================================
+
+  # Pipeline name in OpenObserve (Required)
+  # - Must be unique within the organization
+  # - This is the internal name in OpenObserve, different from K8s resource name
+  # - Pattern: alphanumeric with underscores/hyphens
+  # - Example: "log_enrichment_pipeline", "metrics_aggregation"
+  name: "pipeline_name"
+
+  # Pipeline description (Optional but recommended)
+  # - Human-readable description of pipeline purpose
+  # - Max length: 500 characters
+  # - Should explain: what data it processes, transformations applied, output
+  description: "Enriches application logs with kubernetes metadata and routes to appropriate streams"
+
+  # Enable/disable the pipeline (Optional, defaults to true)
+  # - When false, pipeline won't process data but remains configured
+  # - Useful for temporarily disabling pipelines during maintenance
+  enabled: true
+
+  # Organization name (Optional)
+  # - Usually auto-determined from configRef
+  # - Override only if targeting different org
+  org: "default"
+
+  # Pipeline ID (Optional)
+  # - Unique identifier assigned by OpenObserve
+  # - Usually managed by operator, don't set manually
+  pipeline_id: ""
+
+  # Version number (Optional)
+  # - Pipeline version for update tracking
+  # - Managed by operator for optimistic locking
+  version: 1
+
+  # ============================================================================
+  # DATA SOURCE CONFIGURATION (Required)
+  # Defines the input stream for the pipeline
+  # ============================================================================
+  source:
+    # Stream name to read from (Required)
+    # - Must exist in OpenObserve
+    # - Examples: "application_logs", "kubernetes_events", "nginx_access"
+    streamName: "default"
+
+    # Stream type (Optional, defaults to "logs")
+    # - Allowed values: logs, metrics, traces
+    # - Determines available processing functions
+    streamType: "logs"
+
+    # Source type (Optional, defaults to "realtime")
+    # - "realtime": Processes data as it arrives
+    # - "scheduled": Batch processing at intervals
+    sourceType: "realtime"
+
+  # ============================================================================
+  # PIPELINE NODES (Required)
+  # Define processing steps - minimum 1 node required
+  # ============================================================================
+  nodes:
+    # ==================================
+    # NODE TYPE 1: CONDITION NODE
+    # Filters data based on conditions
+    # ==================================
+    - id: "filter-errors"       # Unique identifier within pipeline (Required)
+      type: "condition"         # Node type (Required)
+      name: "Filter Error Logs" # Human-readable name (Required)
+
+      # Configuration for this node type
+      config:
+        # Conditions can be simple or complex with AND/OR logic
+        conditions:
+          and:  # or use "or" for OR logic
+            - column: "level"
+              operator: "="
+              value: "ERROR"
+              ignore_case: false
+            - column: "status_code"
+              operator: ">="
+              value: "500"
+              ignore_case: false
+
+        # Alternative: Simple array format (implicitly AND)
+        # conditions:
+        #   - column: "severity"
+        #     operator: ">"
+        #     value: "5"
+
+      # Node input/output type (Optional, auto-determined)
+      # - "input": Accepts data from source
+      # - "output": Sends data to destination
+      # - "default": Processing node (most common)
+      ioType: "default"
+
+      # Additional metadata (Optional)
+      meta:
+        description: "Filters for error-level logs"
+        team: "platform"
+
+      # UI positioning (Optional, auto-calculated if not provided)
+      position:
+        x: 300
+        y: 150
+
+      # UI styling (Optional)
+      style:
+        backgroundColor: "#ffcccc"
+
+    # ==================================
+    # NODE TYPE 2: FUNCTION NODE
+    # Transforms data using VRL functions
+    # ==================================
+    - id: "enrich-data"
+      type: "function"
+      name: "Enrich with Metadata"
+
+      config:
+        # VRL (Vector Remap Language) function
+        function: |
+          # Add timestamp if missing
+          if !exists(.timestamp) {
+            .timestamp = now()
+          }
+
+          # Parse JSON if present
+          if exists(.json_data) {
+            .parsed = parse_json!(.json_data)
+          }
+
+          # Add processing metadata
+          .processed_by = "k8s-pipeline"
+          .processing_time = format_timestamp!(now(), "%Y-%m-%d %H:%M:%S")
+
+          # Extract fields
+          if exists(.kubernetes) {
+            .k8s_namespace = .kubernetes.namespace
+            .k8s_pod = .kubernetes.pod_name
+            .k8s_container = .kubernetes.container_name
+          }
+
+          # Calculate severity score
+          .severity_score = if .level == "ERROR" {
+            10
+          } else if .level == "WARN" {
+            5
+          } else {
+            1
+          }
+
+        # Function execution settings
+        after_flatten: false  # Execute after flattening nested fields
+        num_args: 0          # Number of arguments (usually 0)
+
+      ioType: "default"
+
+      position:
+        x: 300
+        y: 300
+
+    # ==================================
+    # NODE TYPE 3: STREAM OUTPUT NODE
+    # Routes data to another stream
+    # ==================================
+    - id: "output-errors"
+      type: "stream"
+      name: "Route to Error Stream"
+
+      config:
+        org_id: "default"           # Target organization
+        stream_name: "error_logs"   # Target stream name
+        stream_type: "logs"         # Target stream type
+
+      # Output nodes have ioType "output"
+      ioType: "output"
+
+      position:
+        x: 300
+        y: 450
+
+    # ==================================
+    # NODE TYPE 4: QUERY NODE (Scheduled Pipelines)
+    # Defines data query for batch processing
+    # ==================================
+    - id: "scheduled-query"
+      type: "query"
+      name: "Hourly Aggregation Query"
+
+      config:
+        # Query configuration for scheduled pipelines
+        stream_type: "logs"
+
+        # Query conditions
+        query_condition:
+          type: "sql"
+          sql: |
+            SELECT
+              DATE_TRUNC('hour', timestamp) as hour,
+              level,
+              COUNT(*) as count,
+              AVG(response_time) as avg_response_time
+            FROM logs
+            WHERE timestamp > NOW() - INTERVAL '1 hour'
+            GROUP BY hour, level
+            ORDER BY hour DESC
+
+        # Trigger schedule
+        trigger_condition:
+          frequency: 60
+          frequency_type: "minutes"
+          period: 60
+          threshold: 1
+          operator: ">="
+          timezone: "UTC"
+
+      ioType: "input"  # Query nodes are input nodes for scheduled pipelines
+
+    # ==================================
+    # NODE TYPE 5: REDACTION NODE
+    # Redacts sensitive information
+    # ==================================
+    - id: "redact-pii"
+      type: "redaction"
+      name: "Redact Personal Information"
+
+      config:
+        # Define patterns to redact
+        patterns:
+          - name: "email"
+            pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+            replacement: "[REDACTED_EMAIL]"
+          - name: "ssn"
+            pattern: "\\d{3}-\\d{2}-\\d{4}"
+            replacement: "[REDACTED_SSN]"
+          - name: "credit_card"
+            pattern: "\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}[\\s-]?\\d{4}"
+            replacement: "[REDACTED_CC]"
+
+        # Fields to check for sensitive data
+        fields:
+          - "message"
+          - "user_input"
+          - "description"
+
+      ioType: "default"
+
+    # ==================================
+    # NODE TYPE 6: AGGREGATION NODE
+    # Aggregates data over time windows
+    # ==================================
+    - id: "aggregate-metrics"
+      type: "aggregation"
+      name: "5-Minute Aggregation"
+
+      config:
+        # Time window for aggregation
+        window: 300  # seconds (5 minutes)
+
+        # Group by fields
+        group_by:
+          - "service"
+          - "endpoint"
+
+        # Aggregation functions
+        aggregations:
+          - field: "response_time"
+            function: "avg"
+            output_field: "avg_response_time"
+          - field: "response_time"
+            function: "p95"
+            output_field: "p95_response_time"
+          - field: "*"
+            function: "count"
+            output_field: "request_count"
+
+      ioType: "default"
+
+  # ============================================================================
+  # PIPELINE EDGES (Optional but usually required)
+  # Define connections between nodes to create data flow
+  # ============================================================================
+  edges:
+    # Edge from first node to second node
+    - id: "edge-1"  # Optional unique ID
+      source: "filter-errors"   # Source node ID (Required)
+      target: "enrich-data"     # Target node ID (Required)
+
+    # Edge from second to third node
+    - source: "enrich-data"
+      target: "output-errors"
+
+    # Edges can create branches (one source, multiple targets)
+    - source: "filter-errors"
+      target: "redact-pii"
+
+    - source: "redact-pii"
+      target: "aggregate-metrics"
+
+    # Note: For realtime pipelines, edges from source to first nodes
+    # are automatically created if not specified
+
+# ============================================================================
+# VALIDATION RULES AND CONSTRAINTS
+# ============================================================================
+#
+# NODE RULES:
+# 1. Each node must have unique ID within pipeline
+# 2. Node type must be valid: condition, function, stream, query, redaction, aggregation
+# 3. At least one node is required
+# 4. Output nodes (stream) should not have outgoing edges
+# 5. Input nodes (query) should not have incoming edges for scheduled pipelines
+#
+# EDGE RULES:
+# 6. Source and target must reference existing node IDs
+# 7. No cycles allowed (directed acyclic graph)
+# 8. Edges are optional for single-node pipelines
+#
+# SOURCE RULES:
+# 9. Stream must exist in OpenObserve
+# 10. Stream type must be: logs, metrics, or traces
+# 11. Source type must be: realtime or scheduled
+#
+# SPECIAL CONFIGURATIONS:
+# 12. Scheduled pipelines must have a query node
+# 13. Realtime pipelines process data as it arrives
+# 14. Function nodes use VRL syntax
+# 15. Condition nodes support complex AND/OR logic
+#
+# DATA FLOW:
+# 16. Data flows from source → through nodes (following edges) → to outputs
+# 17. Nodes without incoming edges connect to source automatically (realtime)
+# 18. Multiple output nodes create data copies
+# 19. Branches allow parallel processing paths
+
+# ============================================================================
+# COMPLETE EXAMPLES
+# ============================================================================
+
+---
+# Example 1: Simple Log Filtering Pipeline
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObservePipeline
+metadata:
+  name: simple-log-filter
+  namespace: monitoring
+spec:
+  configRef:
+    name: openobserve-main
+    namespace: monitoring
+
+  name: "error_log_filter"
+  description: "Filters error logs and routes to dedicated stream"
+  enabled: true
+
+  source:
+    streamName: "application_logs"
+    streamType: "logs"
+    sourceType: "realtime"
+
+  nodes:
+    - id: "filter-1"
+      type: "condition"
+      name: "Filter Errors"
+      config:
+        conditions:
+          - column: "level"
+            operator: "="
+            value: "ERROR"
+
+    - id: "output-1"
+      type: "stream"
+      name: "Error Stream"
+      config:
+        stream_name: "critical_errors"
+        stream_type: "logs"
+      ioType: "output"
+
+  edges:
+    - source: "filter-1"
+      target: "output-1"
+
+---
+# Example 2: Complex Data Enrichment Pipeline
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObservePipeline
+metadata:
+  name: k8s-log-enrichment
+  namespace: monitoring
+spec:
+  configRef:
+    name: openobserve-main
+
+  name: "kubernetes_enrichment_pipeline"
+  description: "Enriches K8s logs with metadata and routes by severity"
+  enabled: true
+
+  source:
+    streamName: "k8s_pod_logs"
+    streamType: "logs"
+
+  nodes:
+    # Parse JSON logs
+    - id: "parse-json"
+      type: "function"
+      name: "Parse JSON"
+      config:
+        function: |
+          if exists(.message) && starts_with(.message, "{") {
+            .parsed = parse_json!(.message)
+            . = merge!(., .parsed)
+            del(.message)
+          }
+
+    # Add Kubernetes metadata
+    - id: "add-k8s-meta"
+      type: "function"
+      name: "Add K8s Metadata"
+      config:
+        function: |
+          .cluster = "production"
+          .environment = if .namespace == "prod" {
+            "production"
+          } else if .namespace == "staging" {
+            "staging"
+          } else {
+            "development"
+          }
+          .app_name = .labels.app ?? "unknown"
+          .version = .labels.version ?? "unknown"
+
+    # Filter critical errors
+    - id: "filter-critical"
+      type: "condition"
+      name: "Critical Errors"
+      config:
+        conditions:
+          and:
+            - column: "level"
+              operator: "="
+              value: "ERROR"
+            - column: "severity"
+              operator: ">="
+              value: "8"
+
+    # Filter warnings
+    - id: "filter-warnings"
+      type: "condition"
+      name: "Warnings"
+      config:
+        conditions:
+          - column: "level"
+            operator: "="
+            value: "WARN"
+
+    # Redact sensitive data
+    - id: "redact"
+      type: "function"
+      name: "Redact PII"
+      config:
+        function: |
+          .message = redact!(.message, patterns: [
+            r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',
+            r'\b\d{3}-\d{2}-\d{4}\b'
+          ])
+
+    # Output critical errors
+    - id: "output-critical"
+      type: "stream"
+      name: "Critical Errors"
+      config:
+        stream_name: "critical_alerts"
+        stream_type: "logs"
+      ioType: "output"
+
+    # Output warnings
+    - id: "output-warnings"
+      type: "stream"
+      name: "Warnings"
+      config:
+        stream_name: "warning_logs"
+        stream_type: "logs"
+      ioType: "output"
+
+    # Output all enriched logs
+    - id: "output-all"
+      type: "stream"
+      name: "Enriched Logs"
+      config:
+        stream_name: "enriched_logs"
+        stream_type: "logs"
+      ioType: "output"
+
+  edges:
+    # Main processing chain
+    - source: "parse-json"
+      target: "add-k8s-meta"
+
+    - source: "add-k8s-meta"
+      target: "redact"
+
+    # Branch for critical errors
+    - source: "redact"
+      target: "filter-critical"
+
+    - source: "filter-critical"
+      target: "output-critical"
+
+    # Branch for warnings
+    - source: "redact"
+      target: "filter-warnings"
+
+    - source: "filter-warnings"
+      target: "output-warnings"
+
+    # All enriched logs
+    - source: "redact"
+      target: "output-all"
+
+---
+# Example 3: Scheduled Aggregation Pipeline
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObservePipeline
+metadata:
+  name: hourly-metrics-aggregation
+  namespace: monitoring
+spec:
+  configRef:
+    name: openobserve-main
+
+  name: "hourly_metrics_pipeline"
+  description: "Aggregates metrics hourly and stores summary"
+  enabled: true
+
+  source:
+    streamName: "app_metrics"
+    streamType: "metrics"
+    sourceType: "scheduled"
+
+  nodes:
+    # Query node for scheduled pipeline
+    - id: "hourly-query"
+      type: "query"
+      name: "Hourly Metrics Query"
+      config:
+        query_condition:
+          type: "sql"
+          sql: |
+            SELECT
+              DATE_TRUNC('hour', _timestamp) as hour,
+              service,
+              endpoint,
+              COUNT(*) as request_count,
+              AVG(response_time) as avg_response,
+              PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY response_time) as p95_response,
+              PERCENTILE_CONT(0.99) WITHIN GROUP (ORDER BY response_time) as p99_response,
+              SUM(CASE WHEN status_code >= 500 THEN 1 ELSE 0 END) as error_count
+            FROM metrics
+            WHERE _timestamp >= NOW() - INTERVAL '1 hour'
+            GROUP BY hour, service, endpoint
+
+        trigger_condition:
+          frequency: 60
+          frequency_type: "minutes"
+          period: 60
+          threshold: 1
+          operator: ">="
+          timezone: "UTC"
+      ioType: "input"
+
+    # Process results
+    - id: "calculate-sla"
+      type: "function"
+      name: "Calculate SLA"
+      config:
+        function: |
+          if .request_count > 0 {
+            .error_rate = .error_count / .request_count
+            .sla_met = .error_rate < 0.01 && .p99_response < 1000
+            .health_score = if .sla_met { 100 } else {
+              100 - ((.error_rate * 100) + (max(.p99_response - 1000, 0) / 10))
+            }
+          }
+
+    # Store aggregated results
+    - id: "output-summary"
+      type: "stream"
+      name: "Metrics Summary"
+      config:
+        stream_name: "metrics_hourly_summary"
+        stream_type: "logs"
+      ioType: "output"
+
+  edges:
+    - source: "hourly-query"
+      target: "calculate-sla"
+
+    - source: "calculate-sla"
+      target: "output-summary"
+
+---
+# Example 4: Multi-Branch Processing Pipeline
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObservePipeline
+metadata:
+  name: multi-branch-processor
+  namespace: monitoring
+spec:
+  configRef:
+    name: openobserve-main
+
+  name: "multi_branch_pipeline"
+  description: "Processes logs through multiple parallel branches"
+  enabled: true
+
+  source:
+    streamName: "mixed_logs"
+    streamType: "logs"
+
+  nodes:
+    # Common parsing
+    - id: "parse"
+      type: "function"
+      name: "Parse Logs"
+      config:
+        function: |
+          # Extract common fields
+          .timestamp = now()
+          .source_type = .type ?? "unknown"
+
+          # Parse based on format
+          if exists(.json) {
+            . = merge!(., parse_json!(.json))
+          }
+
+    # Branch 1: Security events
+    - id: "security-filter"
+      type: "condition"
+      name: "Security Events"
+      config:
+        conditions:
+          or:
+            - column: "event_type"
+              operator: "="
+              value: "authentication"
+            - column: "event_type"
+              operator: "="
+              value: "authorization"
+            - column: "category"
+              operator: "="
+              value: "security"
+
+    - id: "security-enhance"
+      type: "function"
+      name: "Enhance Security"
+      config:
+        function: |
+          .risk_score = if .failed_attempts > 5 { 10 }
+                       else if .failed_attempts > 2 { 5 }
+                       else { 1 }
+          .alert_required = .risk_score >= 5
+
+    - id: "security-output"
+      type: "stream"
+      name: "Security Stream"
+      config:
+        stream_name: "security_events"
+        stream_type: "logs"
+      ioType: "output"
+
+    # Branch 2: Performance metrics
+    - id: "perf-filter"
+      type: "condition"
+      name: "Performance Data"
+      config:
+        conditions:
+          - column: "response_time"
+            operator: ">"
+            value: "0"
+
+    - id: "perf-calc"
+      type: "function"
+      name: "Calculate Performance"
+      config:
+        function: |
+          .latency_category = if .response_time < 100 { "fast" }
+                              else if .response_time < 500 { "normal" }
+                              else if .response_time < 1000 { "slow" }
+                              else { "critical" }
+
+    - id: "perf-output"
+      type: "stream"
+      name: "Performance Stream"
+      config:
+        stream_name: "performance_metrics"
+        stream_type: "metrics"
+      ioType: "output"
+
+    # Branch 3: Error tracking
+    - id: "error-filter"
+      type: "condition"
+      name: "Error Events"
+      config:
+        conditions:
+          or:
+            - column: "level"
+              operator: "="
+              value: "ERROR"
+            - column: "status_code"
+              operator: ">="
+              value: "500"
+
+    - id: "error-enhance"
+      type: "function"
+      name: "Enhance Errors"
+      config:
+        function: |
+          .error_id = uuid_v4()
+          .error_timestamp = now()
+          .requires_oncall = .level == "ERROR" && .severity > 7
+
+    - id: "error-output"
+      type: "stream"
+      name: "Error Stream"
+      config:
+        stream_name: "error_tracking"
+        stream_type: "logs"
+      ioType: "output"
+
+  edges:
+    # From parse to all branches
+    - source: "parse"
+      target: "security-filter"
+    - source: "parse"
+      target: "perf-filter"
+    - source: "parse"
+      target: "error-filter"
+
+    # Security branch
+    - source: "security-filter"
+      target: "security-enhance"
+    - source: "security-enhance"
+      target: "security-output"
+
+    # Performance branch
+    - source: "perf-filter"
+      target: "perf-calc"
+    - source: "perf-calc"
+      target: "perf-output"
+
+    # Error branch
+    - source: "error-filter"
+      target: "error-enhance"
+    - source: "error-enhance"
+      target: "error-output"
+
+---
+# Example 5: Data Sampling Pipeline
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObservePipeline
+metadata:
+  name: sampling-pipeline
+  namespace: monitoring
+spec:
+  configRef:
+    name: openobserve-main
+
+  name: "log_sampling"
+  description: "Samples logs for reduced storage while keeping all errors"
+  enabled: true
+
+  source:
+    streamName: "high_volume_logs"
+    streamType: "logs"
+
+  nodes:
+    # Keep all errors
+    - id: "error-check"
+      type: "condition"
+      name: "Is Error?"
+      config:
+        conditions:
+          - column: "level"
+            operator: "="
+            value: "ERROR"
+
+    # Sample non-errors (10% sampling)
+    - id: "sample-logs"
+      type: "function"
+      name: "Sample 10%"
+      config:
+        function: |
+          # Generate random number for sampling
+          .sample_rand = random_int(1, 100)
+          .should_keep = .level == "ERROR" || .sample_rand <= 10
+
+          # Add sampling metadata
+          if .should_keep {
+            .sampled = .sample_rand > 10
+            .sample_rate = if .sampled { 0.1 } else { 1.0 }
+          }
+
+    # Filter to keep only sampled
+    - id: "filter-sampled"
+      type: "condition"
+      name: "Keep Sampled"
+      config:
+        conditions:
+          - column: "should_keep"
+            operator: "="
+            value: "true"
+
+    # Output sampled logs
+    - id: "output-sampled"
+      type: "stream"
+      name: "Sampled Logs"
+      config:
+        stream_name: "sampled_logs"
+        stream_type: "logs"
+      ioType: "output"
+
+    # Separate high-priority errors
+    - id: "output-errors"
+      type: "stream"
+      name: "All Errors"
+      config:
+        stream_name: "error_archive"
+        stream_type: "logs"
+      ioType: "output"
+
+  edges:
+    # Main sampling flow
+    - source: "sample-logs"
+      target: "filter-sampled"
+
+    - source: "filter-sampled"
+      target: "output-sampled"
+
+    # Error branch
+    - source: "error-check"
+      target: "output-errors"
+
+# ============================================================================
+# TROUBLESHOOTING GUIDE
+# ============================================================================
+#
+# COMMON ISSUES AND SOLUTIONS:
+#
+# 1. "Stream not found" Error:
+#    - Solution: Ensure source stream exists in OpenObserve
+#    - Check stream name and type match exactly
+#
+# 2. "Invalid node reference in edge":
+#    - Solution: Verify all edge source/target IDs match node IDs
+#    - Check for typos in node IDs
+#
+# 3. "Cycle detected in pipeline":
+#    - Solution: Ensure edges form a directed acyclic graph (DAG)
+#    - Remove any edges that create loops
+#
+# 4. "Function compilation error":
+#    - Solution: Check VRL syntax in function nodes
+#    - Test functions in OpenObserve UI first
+#
+# 5. "No output nodes defined":
+#    - Solution: Add at least one stream node with ioType: "output"
+#    - Or ensure data routes to a destination
+#
+# 6. Pipeline not processing data:
+#    - Check: Is enabled: true?
+#    - Check: Is source stream receiving data?
+#    - Check: Are conditions too restrictive?
+#
+# 7. Scheduled pipeline not running:
+#    - Check: Query node properly configured?
+#    - Check: Trigger condition frequency set?
+#    - Check: Source type is "scheduled"?
+#
+# 8. Data not appearing in output stream:
+#    - Check: Output stream exists and is configured correctly
+#    - Check: Edge connections are correct
+#    - Check: Conditions aren't filtering out all data
+#
+# 9. Performance issues:
+#    - Simplify complex VRL functions
+#    - Reduce number of branches
+#    - Consider sampling for high-volume streams
+#
+# 10. VRL function errors:
+#     - Use error handling: parse_json!() vs parse_json()
+#     - Check field existence before accessing: exists(.field)
+#     - Test functions incrementally
+
+# ============================================================================
+# VRL FUNCTION REFERENCE
+# ============================================================================
+#
+# COMMON VRL FUNCTIONS:
+#
+# Field Operations:
+# - exists(.field) - Check if field exists
+# - del(.field) - Delete field
+# - .new_field = value - Add/update field
+#
+# String Functions:
+# - starts_with(.field, "prefix")
+# - ends_with(.field, "suffix")
+# - contains(.field, "substring")
+# - replace(.field, "old", "new")
+# - split(.field, delimiter)
+# - join(array, delimiter)
+#
+# Parsing:
+# - parse_json(.field) - Parse JSON (can fail)
+# - parse_json!(.field) - Parse JSON (aborts on error)
+# - parse_regex(.field, pattern)
+# - parse_timestamp(.field, format)
+#
+# Type Conversion:
+# - to_string(.field)
+# - to_int(.field)
+# - to_float(.field)
+# - to_bool(.field)
+#
+# Date/Time:
+# - now() - Current timestamp
+# - format_timestamp(timestamp, format)
+# - parse_timestamp(string, format)
+#
+# Logic:
+# - if condition { value1 } else { value2 }
+# - match(.field) { pattern1 => result1, pattern2 => result2 }
+#
+# Arrays/Objects:
+# - merge(obj1, obj2) - Merge objects
+# - append(array, item) - Add to array
+# - compact(array) - Remove nulls
+# - unique(array) - Remove duplicates
+#
+# Math:
+# - ceil(.field)
+# - floor(.field)
+# - round(.field)
+# - abs(.field)
+# - max(a, b)
+# - min(a, b)
+#
+# Random:
+# - random_int(min, max)
+# - random_float()
+# - uuid_v4()
+
+# ============================================================================
+# END OF TEMPLATE
+# ============================================================================

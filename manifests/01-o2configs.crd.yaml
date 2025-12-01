@@ -1,0 +1,90 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: openobserveconfigs.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: OpenObserveConfig
+    listKind: OpenObserveConfigList
+    plural: openobserveconfigs
+    singular: openobserveconfig
+    shortNames:
+    - o2config
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - endpoint
+            - organization
+            - credentialsSecretRef
+            properties:
+              endpoint:
+                type: string
+              organization:
+                type: string
+              credentialsSecretRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                  key:
+                    type: string
+              tlsVerify:
+                type: boolean
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - type
+                  - status
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      format: int64
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+              lastValidationTime:
+                type: string
+                format: date-time
+              observedGeneration:
+                type: integer
+                format: int64
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Endpoint
+      type: string
+      jsonPath: .spec.endpoint
+    - name: Organization
+      type: string
+      jsonPath: .spec.organization
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp

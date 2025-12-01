@@ -1,0 +1,84 @@
+# ============================================================================
+# OpenObserve Pipeline Template - Production Reference Guide
+# ============================================================================
+#
+# Version: v1alpha1
+# Last Updated: 2024-12-01
+#
+# ============================================================================
+
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObservePipeline
+metadata:
+  name: myfirstalertpipeline       # Kubernetes resource name (lowercase, hyphens)
+  namespace: o2operator         # Namespace where pipeline resource is created
+spec:
+  configRef:
+    name: openobserve-dev      # Name of the OpenObserveConfig resource (Required)
+    namespace: o2operator       # Namespace of the config (Optional, defaults to pipeline namespace)
+
+  name: "pipeline-name"
+  description: "Description of what this pipeline does"
+  enabled: true
+  org: "default"
+  source:
+    streamName: "application_logs"   # Source stream name (Required for realtime)
+    streamType: "logs"               # Type: logs, metrics, or traces
+    sourceType: "realtime"           # Process data as it arrives
+
+  # For SCHEDULED pipelines (batch processing with queries):
+  # source:
+  #   sourceType: "scheduled"         # Run on a schedule
+  #   streamType: "logs"              # Type of data being queried
+  #   queryCondition:                 # Query configuration
+  #     type: "sql"                   # Query type: sql or promql
+  #     sql: "SELECT * FROM default"  # SQL query
+  #     searchEventType: "derivedstream"
+  #   triggerCondition:               # Schedule configuration
+  #     period: 1
+  #     operator: "="
+  #     threshold: 0
+  #     frequency: 1
+  #     frequencyType: "minutes"      # minutes, hours, days
+  #     silence: 0
+  #     timezone: "UTC"
+  #     alignTime: true
+
+  nodes:
+    - id: "node1"              # Unique ID within pipeline
+      type: "condition"              # Node type
+      name: "Filter by Level"        # Display name
+      config:
+        conditions:                  # Filter conditions
+          - column: "level"
+            operator: "="            # Operators: =, !=, >, <, >=, <=, contains, not_contains
+            value: "info"
+            ignore_case: true
+
+    - id: "node2"
+      type: "function"
+      name: "Process false"
+      config:
+        function: processed
+        after_flatten: true
+        num_args: 0
+
+    - id: "output-stream"
+      type: "stream"
+      name: "Output to Stream"
+      config:
+        stream_name: "processed_logs"   # Target stream name
+        stream_type: "logs"             # Target stream type
+
+    - id: "remote-output"
+      type: "remote_stream"
+      name: "Send to Remote"
+      config:
+        destination_name: "openobserve"  # Remote destination
+
+  edges:
+    - source: "node1"
+      target: "node2"
+    - source: "node2"
+      target: "output-stream"
+

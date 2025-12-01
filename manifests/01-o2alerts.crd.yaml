@@ -1,0 +1,259 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: openobservealerts.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: OpenObserveAlert
+    listKind: OpenObserveAlertList
+    plural: openobservealerts
+    singular: openobservealert
+    shortNames:
+    - o2alert
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - configRef
+            - name
+            - streamName
+            - streamType
+            - queryCondition
+            - triggerCondition
+            - destinations
+            properties:
+              configRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+              name:
+                type: string
+                pattern: "^[a-zA-Z0-9_-]+$"
+              streamName:
+                type: string
+                default: default
+              streamType:
+                type: string
+                enum:
+                - logs
+                - metrics
+                - traces
+                default: logs
+              enabled:
+                type: boolean
+                default: true
+              description:
+                type: string
+              isRealTime:
+                type: boolean
+              queryCondition:
+                type: object
+                required:
+                - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                    - custom
+                    - sql
+                    - promql
+                  sql:
+                    type: string
+                  promql:
+                    type: string
+                  conditions:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  aggregation:
+                    type: object
+                    properties:
+                      groupBy:
+                        type: array
+                        items:
+                          type: string
+                      function:
+                        type: string
+                      having:
+                        type: object
+                        properties:
+                          column:
+                            type: string
+                          operator:
+                            type: string
+                          value:
+                            type: number
+                            format: double
+                          ignoreCase:
+                            type: boolean
+                            default: false
+                  vrlFunction:
+                    type: string
+                  searchEventType:
+                    type: string
+                  promqlCondition:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  multiTimeRange:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        offset:
+                          type: string
+                          pattern: "^[0-9]+(h|d|m)$"
+              triggerCondition:
+                type: object
+                required:
+                - frequency
+                properties:
+                  frequency:
+                    type: integer
+                    format: int64
+                  frequencyType:
+                    type: string
+                    enum:
+                    - minutes
+                    - hours
+                    - days
+                    default: minutes
+                  cron:
+                    type: string
+                  period:
+                    type: integer
+                    format: int64
+                    description: Time window to look back in minutes
+                  silence:
+                    type: integer
+                    format: int64
+                  threshold:
+                    type: integer
+                    format: int64
+                  operator:
+                    type: string
+                    enum:
+                    - "="
+                    - "!="
+                    - ">="
+                    - "<="
+                    - ">"
+                    - "<"
+                  timezone:
+                    type: string
+                  toleranceInSecs:
+                    type: integer
+                    format: int64
+                  alignTime:
+                    type: boolean
+                    default: false
+              destinations:
+                type: array
+                minItems: 1
+                maxItems: 10
+                items:
+                  type: string
+              contextAttributes:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - name
+                  - value
+                  - key
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
+                    key:
+                      type: string
+              rowTemplate:
+                type: string
+              rowTemplateType:
+                type: string
+                enum:
+                - String
+                - json
+                default: String
+              folderId:
+                type: string
+                default: default
+              folderName:
+                type: string
+              deduplication:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
+                  fingerprintFields:
+                    type: array
+                    items:
+                      type: string
+                  timeWindowMinutes:
+                    type: integer
+                    format: int64
+              tzOffset:
+                type: integer
+                format: int32
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - type
+                  - status
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      format: int64
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+              openobserveId:
+                type: string
+              lastSyncTime:
+                type: string
+                format: date-time
+              observedGeneration:
+                type: integer
+                format: int64
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Stream
+      type: string
+      jsonPath: .spec.streamName
+    - name: Enabled
+      type: boolean
+      jsonPath: .spec.enabled
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp

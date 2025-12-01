@@ -1,0 +1,225 @@
+# Production-Grade Operator Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openobserve-operator
+  namespace: o2operator
+  labels:
+    app: openobserve-operator
+    control-plane: controller-manager
+    version: "v0.1.0"  # Add version label
+spec:
+  replicas: 2  # High Availability with leader election
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # Zero downtime deployments
+  selector:
+    matchLabels:
+      app: openobserve-operator
+      control-plane: controller-manager
+  template:
+    metadata:
+      labels:
+        app: openobserve-operator
+        control-plane: controller-manager
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: openobserve-operator
+      # Priority for critical infrastructure components
+      priorityClassName: system-cluster-critical
+      # Anti-affinity to spread replicas across nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: openobserve-operator
+              topologyKey: kubernetes.io/hostname
+      # Topology spread for even distribution
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: openobserve-operator
+      containers:
+      - name: manager
+        # Use specific version tag for production
+        image: public.ecr.aws/zinclabs/o2operator:latest
+        imagePullPolicy: Always  # More efficient for tagged versions
+        command:
+        - /manager
+        args:
+        - --leader-elect
+        - --metrics-bind-address=:8080
+        - --health-probe-bind-address=:8081
+        env:
+        - name: WATCH_NAMESPACE
+          value: ""  # Empty means watch all namespaces
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: OPERATOR_NAME
+          value: "openobserve-operator"
+        - name: O2OPERATOR_LOG_LEVEL
+          value: "info"  # Direct value instead of ConfigMap reference
+        ports:
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        - containerPort: 8081
+          name: health
+          protocol: TCP
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        # Startup probe for slow starts
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 30  # 5 minutes total
+        resources:
+          requests:
+            cpu: 200m      # Increased for production
+            memory: 256Mi  # Increased for production
+          limits:
+            cpu: 1000m     # 1 CPU core
+            memory: 1Gi    # 1GB RAM
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65534  # nobody user
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+        - mountPath: /tmp
+          name: tmp-dir
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: openobserve-webhook-server-cert
+      - name: tmp-dir
+        emptyDir:
+          sizeLimit: 100Mi  # Limit temp directory size
+      nodeSelector:
+        kubernetes.io/os: linux
+        kubernetes.io/arch: amd64  # Specify architecture
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+      # DNS policy for better performance
+      dnsPolicy: ClusterFirst
+      # Termination grace period
+      terminationGracePeriodSeconds: 30
+      # Restart policy
+      restartPolicy: Always
+
+---
+# PodDisruptionBudget for high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: openobserve-operator-pdb
+  namespace: o2operator
+spec:
+  minAvailable: 1  # Always keep at least 1 pod running
+  selector:
+    matchLabels:
+      app: openobserve-operator
+      control-plane: controller-manager
+
+---
+# Service for the operator metrics
+apiVersion: v1
+kind: Service
+metadata:
+  name: openobserve-operator-metrics
+  namespace: o2operator
+  labels:
+    app: openobserve-operator
+    control-plane: controller-manager
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  - name: health
+    port: 8081
+    protocol: TCP
+    targetPort: 8081
+  selector:
+    app: openobserve-operator
+    control-plane: controller-manager
+
+---
+# Service for the webhook
+apiVersion: v1
+kind: Service
+metadata:
+  name: openobserve-webhook-service
+  namespace: o2operator
+  labels:
+    app: openobserve-operator
+spec:
+  type: ClusterIP
+  ports:
+  - name: webhook
+    port: 443
+    protocol: TCP
+    targetPort: 9443
+  selector:
+    app: openobserve-operator
+    control-plane: controller-manager

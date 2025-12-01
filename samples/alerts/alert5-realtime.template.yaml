@@ -1,0 +1,48 @@
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObserveAlert
+metadata:
+  name: realtime-alert
+  namespace: o2operator
+spec:
+  configRef:
+    name: openobserve-main       #dont forget to change this to your OpenObserveConfig
+    namespace: o2operator
+
+  name: "realtime_error_alert"
+  streamName: "default"
+  streamType: "logs"
+  isRealTime: true
+
+  queryCondition:
+    type: "custom"
+    aggregation: null
+    conditions: null
+    # conditions:
+    #   or:
+    #     - column: job
+    #       operator: ">"
+    #       value: "11"
+    #       ignore_case: false
+    #     - or:
+    #         - column: level
+    #           operator: "="
+    #           value: "111"
+    #           ignore_case: true
+    #         - column: log
+    #           operator: "="
+    #           value: "122"
+    #           ignore_case: true
+
+  triggerCondition:
+    frequency: 1
+    frequencyType: "minutes"
+    period: 1
+    threshold: 1
+    operator: ">="
+    silence: 5
+
+  destinations:
+    - "test-o2-alerts"
+
+  rowTemplate: "CRITICAL: {{error_level}} - {{message}}"
+  rowTemplateType: "String"

@@ -1,0 +1,97 @@
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObservePipeline
+metadata:
+  name: sql-query-src-to-dest-test
+  namespace: o2operator
+spec:
+  # Reference to OpenObserveConfig
+  configRef:
+    name: openobserve-main       #dont forget to change this to your OpenObserveConfig
+    namespace: o2operator
+
+  # Pipeline metadata - matching the JSON
+  name: "sql-query-src-to-dest-test"
+  description: ""
+  enabled: true
+
+  # Organization (from JSON)
+  org: "default"
+
+  # Pipeline ID from JSON (optional)
+  # pipeline_id: "7400589693177298944"
+
+  # Source configuration for scheduled pipeline with query
+  # This is a scheduled pipeline that runs on a schedule with a PromQL query
+  source:
+    # streamName is not required for scheduled pipelines with query conditions
+    sourceType: "scheduled"   # from source.source_type
+    streamType: "logs"     # from source.stream_type
+    queryCondition:
+      type: "sql"
+      sql: "SELECT * FROM default"
+      searchEventType: "derivedstream"
+    triggerCondition:
+      period: 1
+      operator: "="
+      threshold: 0
+      frequency: 1
+      frequencyType: "minutes"
+      silence: 0
+      timezone: "UTC"
+      alignTime: true
+
+  # Processing nodes
+  # Note: The scheduled query source is handled above
+  # We only define the output node here
+  nodes:
+    - id: "node1"
+      type: "condition"
+      name: "Filter info logs"
+      config:
+        conditions:
+          - column: "level"
+            operator: "="
+            value: "info"
+            ignore_case: true
+
+    - id: "node2"
+      type: "function"
+      name: "Process false"
+      config:
+        function: processfalse
+        after_flatten: true
+        num_args: 0
+
+    - id: "node3"
+      type: "function"
+      name: "Process false"
+      config:
+        function: processed
+        after_flatten: true
+        num_args: 0
+
+    # Output node from JSON (id: 888b058b-6740-440d-929a-2f09790340e2)
+    - id: "output-stream-1"
+      type: "stream"           # from data.node_type
+      name: "Output Stream"
+      config:
+        stream_name: "default"  # from data.stream_name
+        stream_type: "logs"     # from data.stream_type
+        
+    - id: "output-stream-2"
+      type: "stream"           # from data.node_type
+      name: "Output Stream"
+      config:
+        stream_name: "default"  # from data.stream_name
+        stream_type: "logs"     # from data.stream_type
+
+  # Edges - for simple pipeline, connection is implicit
+  # edges: []  # Empty because it's a direct source->output connection
+  edges:
+    - source: "node1"
+      target: "node2"
+    - source: "node2"
+      target: "output-stream-1"
+    - source: "node3"
+      target: "output-stream-2"
+
