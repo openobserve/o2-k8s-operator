@@ -43,6 +43,9 @@ spec:
               name:
                 type: string
                 pattern: "^[a-zA-Z0-9_-]+$"
+              org:
+                type: string
+                description: Organization name to create the alert in. If not specified, uses the organization from ConfigRef.
               streamName:
                 type: string
                 default: default
