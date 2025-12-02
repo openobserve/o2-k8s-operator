@@ -119,7 +119,7 @@ spec:
     # NODE TYPE 1: CONDITION NODE
     # Filters data based on conditions
     # ==================================
-    - id: "filter-errors"       # Unique identifier within pipeline (Required)
+    - id: "node1"       # Unique identifier within pipeline (Required)
       type: "condition"         # Node type (Required)
       name: "Filter Error Logs" # Human-readable name (Required)
 
@@ -147,7 +147,7 @@ spec:
     # NODE TYPE 2: FUNCTION NODE
     # Transforms data using VRL functions
     # ==================================
-    - id: "enrich-data"
+    - id: "node2"
       type: "function"
       name: "Enrich with Metadata"
 
@@ -162,7 +162,7 @@ spec:
     # NODE TYPE 3: STREAM OUTPUT NODE
     # Routes data to another stream
     # ==================================
-    - id: "output-errors"
+    - id: "output1"
       type: "stream"
       name: "Route to Error Stream"
 
@@ -176,16 +176,17 @@ spec:
   # Define connections between nodes to create data flow
   # ============================================================================
   edges:
+    # source node will automatically connects to the first node
     # Edge from first node to second node
-    - source: "filter-errors"   # Source node ID (Required)
-      target: "enrich-data"     # Target node ID (Required)
+    - source: "node1" 
+      target: "node2"     # Target node ID (Required)
 
     # Edge from second to third node
-    - source: "enrich-data"
-      target: "output-errors"
+    - source: "node2"
+      target: "output1"
 
     # Edges can create branches (one source, multiple targets)
-    - source: "filter-errors"
+    - source: "node1"
       target: "redact-pii"
 
     - source: "redact-pii"

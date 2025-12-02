@@ -87,11 +87,6 @@ spec:
   # Organize alerts in folders for better management
   # ============================================================================
 
-  # Folder ID for organizing alerts (Optional, defaults to "default")
-  # - Use existing folder ID from OpenObserve
-  # - Useful for organizing by team/service/severity
-  folderId: "default"
-
   # Folder name for auto-creation (Optional)
   # - If specified and folder doesn't exist, it will be created automatically
   # - Takes precedence over folderId if both are specified
