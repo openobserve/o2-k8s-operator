@@ -1,28 +1,28 @@
-# OpenObserve Kubernetes Operator (v1.0.2)
+# OpenObserve Kubernetes Operator (v1.0.3)
 
-A Kubernetes operator that enables declarative management of OpenObserve Enterprise resources (alerts, pipelines) as native Kubernetes Custom Resources.
+A Kubernetes operator that enables declarative management of resources of OpenObserve Enterprise (alerts, pipelines) as native Kubernetes Custom Resources.
 
 ## Overview
 
-The OpenObserve Operator allows you to manage OpenObserve configuration objects using Kubernetes CRDs, enabling GitOps workflows and infrastructure-as-code practices for your observability stack.
+The OpenObserve Operator allows you to manage OpenObserve Enterprise configuration objects using Kubernetes CRDs, enabling GitOps workflows and infrastructure-as-code practices for your observability stack.
 
 > [!IMPORTANT]
 > This operator is designed to work with **OpenObserve Enterprise** only. It requires Enterprise API features that are not available in the open-source version.
 
-**Note:** This operator manages OpenObserve configuration objects only. It does not install or manage the OpenObserve application itself.
+**Note:** This operator manages OpenObserve Enterprise configuration objects only. It does not install or manage the OpenObserve Enterprise application itself.
 
 ## Features
 
 - **Declarative Configuration**: Define alerts and pipelines as Kubernetes resources
 - **GitOps Ready**: Version control and manage observability configurations
-- **Multi-Instance Support**: Manage multiple OpenObserve instances from a single cluster
+- **Multi-Instance Support**: Manage multiple OpenObserve Enterprise instances from a single cluster
 - **Status Reporting**: Real-time sync status and error reporting
 
 ## Supported Resources
 
-- **OpenObserveConfig**: Connection configuration for OpenObserve instances
-- **Alert**: OpenObserve alert definitions
-- **Pipeline**: OpenObserve data pipeline definitions
+- **OpenObserveConfig**: Connection configuration for OpenObserve Enterprise instances
+- **Alert**: OpenObserve Enterprise alert definitions
+- **Pipeline**: OpenObserve Enterprise data pipeline definitions
 
 ## Quick Start
 
@@ -44,7 +44,7 @@ The OpenObserve Operator allows you to manage OpenObserve configuration objects 
 ./deploy.sh --image myrepo/o2operator --tag v1.0.0
 ```
 
-### 2. Configure OpenObserve Connection
+### 2. Configure OpenObserve Enterprise Connection
 
 Apply the appropriate configuration file from `configs/` based on your environment:
 
@@ -59,7 +59,7 @@ kubectl apply -f configs/test/o2test-config.yaml
 kubectl apply -f configs/prod/o2prod-config.yaml
 ```
 
-**Note**: Edit the configuration files to add your actual OpenObserve credentials before applying.
+**Note**: Edit the configuration files to add your actual OpenObserve Enterprise credentials before applying.
 
 ### 3. Deploy Sample Resources
 
@@ -89,7 +89,7 @@ kubectl apply -f samples/pipelines/srctodest.yaml
 
 ### Basic Usage
 
-1. Create a Secret with OpenObserve credentials:
+1. Create a Secret with OpenObserve Enterprise credentials:
 
 ```yaml
 apiVersion: v1

@@ -1,33 +1,32 @@
 # ============================================================================
 #                        OpenObserve Alert Template
+#                        Alert Type: custom (scheduled alert)
+#                        Works for all streamType
 # ============================================================================
-#
-# Version: v1alpha1
-# Last Updated: 2024-11-29
-#
-# ============================================================================
+
 
 apiVersion: openobserve.ai/v1alpha1
 kind: OpenObserveAlert
 metadata:
-  name: myfirstalert  # Kubernetes resource name (lowercase, alphanumeric, hyphens)
+  name: scheduled-custom-metrics-alert  # Kubernetes resource name (lowercase, alphanumeric, hyphens)
   namespace: o2operator       # Target namespace for the alert resource
 spec:
   configRef:
     name: openobserve-main         # Name of the OpenObserveConfig resource (Required)
     namespace: o2operator      # Namespace of the config (Optional, defaults to alert namespace)
 
-  name: "alert_name_without_spaces"
+  name: "scheduled-custom-metrics-alert"
   enabled: true
-  description: "Monitors error rates in the application logs and triggers when threshold is exceeded"
-  streamName: "default"
-  streamType: "logs"
+  description: ""
+  streamName: "cpu_usage_seconds_total"
+  streamType: "metrics"
   isRealTime: false
-  folderId: "default"
-  folderName: "production_alerts"
+  folderName: "test_alerts"
+  org: "dev"
 
   queryCondition:
     type: "custom"
+    # aggregation: null
     aggregation:
       groupBy:
         - "field1"
@@ -38,23 +37,23 @@ spec:
         operator: ">="          
         value: 10              
         ignoreCase: false       
-    conditions: null
-    # conditions:
-    #   or:
-    #     - column: job
-    #       operator: ">"
-    #       value: "11"
-    #       ignore_case: false
-    #     - or:
-    #         - column: level
-    #           operator: "="
-    #           value: "111"
-    #           ignore_case: true
-    #         - column: log
-    #           operator: "="
-    #           value: "122"
-    #           ignore_case: true
-    sql: ""
+    # conditions: null
+    conditions:
+      or:
+        - column: job
+          operator: ">"
+          value: "11"
+          ignore_case: false
+        - or:
+            - column: level
+              operator: "="
+              value: "111"
+              ignore_case: true
+            - column: log
+              operator: "="
+              value: "122"
+              ignore_case: true
+    # sql: ""
     # sql: |
     #   SELECT
     #     host,
@@ -69,7 +68,7 @@ spec:
     #   HAVING error_count > 10
     #   ORDER BY error_count DESC
     #   LIMIT 100
-    vrlFunction: ""
+    # vrlFunction: ""
     # vrlFunction: |
     #   .processed_at = now()
     #   .alert_severity = if .error_count > 100 {
@@ -80,7 +79,8 @@ spec:
     #     "info"
     #   }
     #   .needs_immediate_action = .error_count > 100
-    promql: ""
+
+    # promql: ""
     # promql: |
     #   # CPU usage above 80% for 5 minutes
     #   avg(rate(cpu_usage_seconds_total[5m])) by (instance) > 0.8
@@ -90,13 +90,15 @@ spec:
 
     #   # OR: HTTP error rate above 1%
     #   # sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.01
-    multiTimeRange:
-      - offset: "30m"    
-      - offset: "1h"    
-      - offset: "3h"    
-      - offset: "6h"     
-      - offset: "1d"     
-      - offset: "7d"     
+
+    # multiTimeRange: []
+    # multiTimeRange:
+    #   - offset: "30m"    
+    #   - offset: "1h"    
+    #   - offset: "3h"    
+    #   - offset: "6h"     
+    #   - offset: "1d"     
+    #   - offset: "7d"     
 
   triggerCondition:
     frequency: 5
@@ -119,7 +121,7 @@ spec:
     timeWindowMinutes: 60
 
   destinations:
-    - "Telegram_alert"      
+    - "test-o2-alerts"      
 
   contextAttributes:
     - name: "environment"     

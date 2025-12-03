@@ -120,12 +120,12 @@ spec:
                           pattern: "^[0-9]+(h|d|m)$"
               triggerCondition:
                 type: object
-                required:
-                - frequency
                 properties:
                   frequency:
                     type: integer
                     format: int64
+                    default: 1
+                    minimum: 1
                   frequencyType:
                     type: string
                     enum:
