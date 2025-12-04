@@ -1,6 +1,6 @@
-# OpenObserve Kubernetes Operator (v1.0.3)
+# OpenObserve Kubernetes Operator (v1.0.4)
 
-A Kubernetes operator that enables declarative management of resources of OpenObserve Enterprise (alerts, pipelines) as native Kubernetes Custom Resources.
+A Kubernetes operator that enables declarative management of resources of OpenObserve Enterprise (alerts, pipelines, functions) as native Kubernetes Custom Resources.
 
 ## Overview
 
@@ -13,7 +13,7 @@ The OpenObserve Operator allows you to manage OpenObserve Enterprise configurati
 
 ## Features
 
-- **Declarative Configuration**: Define alerts and pipelines as Kubernetes resources
+- **Declarative Configuration**: Define alerts, pipelines, and functions as Kubernetes resources
 - **GitOps Ready**: Version control and manage observability configurations
 - **Multi-Instance Support**: Manage multiple OpenObserve Enterprise instances from a single cluster
 - **Status Reporting**: Real-time sync status and error reporting
@@ -23,6 +23,7 @@ The OpenObserve Operator allows you to manage OpenObserve Enterprise configurati
 - **OpenObserveConfig**: Connection configuration for OpenObserve Enterprise instances
 - **Alert**: OpenObserve Enterprise alert definitions
 - **Pipeline**: OpenObserve Enterprise data pipeline definitions
+- **Function**: OpenObserve Enterprise VRL transformation functions
 
 ## Quick Start
 
@@ -64,6 +65,9 @@ kubectl apply -f configs/prod/o2prod-config.yaml
 ### 3. Deploy Sample Resources
 
 Use templates from the `samples/` directory:
+- `samples/alerts/` - Alert configuration examples
+- `samples/pipelines/` - Pipeline configuration examples
+- `samples/functions/` - Function transformation examples
 
 **Important:** The sample files have different configRef requirements:
 - Most samples reference `openobserve-main` in their `configRef`
@@ -84,6 +88,9 @@ kubectl apply -f samples/alerts/alert9-minimal.template.yaml
 
 # Deploy a simple pipeline
 kubectl apply -f samples/pipelines/srctodest.yaml
+
+# Deploy a basic function
+kubectl apply -f samples/functions/basic-function.yaml
 ```
 
 
@@ -149,11 +156,49 @@ spec:
     - slack-alerts
 ```
 
+4. Create a Function:
+
+```yaml
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObserveFunction
+metadata:
+  name: data-transformer
+spec:
+  configRef:
+    name: production
+
+  name: data-transformer-function
+  function: |
+    # VRL transformation function
+    .processed_at = now()
+    .environment = "production"
+    if exists(.error) {
+      .severity = "high"
+    }
+    .
+
+  test:
+    enabled: true
+    input:
+      - error: "Connection timeout"
+        message: "Failed to connect"
+    output:
+      - error: "Connection timeout"
+        message: "Failed to connect"
+        processed_at: "2024-01-01T00:00:00Z"
+        environment: "production"
+        severity: "high"
+```
+
 ## Documentation
 
 - [Product Requirements Document](PRD.md)
 - [API Reference](docs/api.md) (coming soon)
 - [Samples](samples/)
+  - [Alert Examples](samples/alerts/)
+  - [Pipeline Examples](samples/pipelines/)
+  - [Function Examples](samples/functions/)
+  - [Function Template Reference](samples/functions/functions.template)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Manual Deployment](docs/MANUAL_DEPLOYMENT.md)
 - [Deploy Script Usage](docs/DEPLOY_SCRIPT_USAGE.md)
@@ -179,7 +224,7 @@ TBD
 
 The uninstall process (`./deploy.sh --uninstall`) will:
 1. Remove finalizers from all custom resources
-2. Delete all OpenObserve custom resources
+2. Delete all OpenObserve custom resources (alerts, pipelines, functions)
 3. Remove the operator deployment and services
 4. Delete RBAC resources
 5. Remove CRDs

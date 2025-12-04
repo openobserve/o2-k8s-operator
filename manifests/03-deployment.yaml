@@ -148,7 +148,7 @@ spec:
           sizeLimit: 100Mi  # Limit temp directory size
       nodeSelector:
         kubernetes.io/os: linux
-        kubernetes.io/arch: amd64  # Specify architecture
+        # Architecture selector removed to support multi-arch deployments (amd64, arm64, etc.)
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule

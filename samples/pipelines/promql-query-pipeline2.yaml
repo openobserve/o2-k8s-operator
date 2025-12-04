@@ -22,7 +22,7 @@ spec:
   # - This is the internal name in OpenObserve, different from K8s resource name
   # - Pattern: alphanumeric with underscores/hyphens
   # - Example: "log_enrichment_pipeline", "metrics_aggregation"
-  name: "sql-query-pipeline2"
+  name: "promql-query-pipeline2"
 
   # Pipeline description (Optional but recommended)
   # - Human-readable description of pipeline purpose

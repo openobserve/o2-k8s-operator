@@ -110,6 +110,21 @@ rules:
   - update
   - watch
 
+- apiGroups:
+  - openobserve.ai
+  resources:
+  - openobservefunctions
+  - openobservefunctions/status
+  - openobservefunctions/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
 # Webhook permissions
 - apiGroups:
   - admissionregistration.k8s.io

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The OpenObserve Kubernetes Operator provides a comprehensive set of features for managing OpenObserve Enterprise resources through Kubernetes-native Custom Resources. This document outlines all available features organized by category.
+The OpenObserve Kubernetes Operator provides a comprehensive set of features for managing OpenObserve Enterprise resources through Kubernetes-native Custom Resources. This document outlines all available features organized by category, including alerts, pipelines, functions, and configurations.
 
 ## Core Features
 
@@ -11,12 +11,14 @@ The OpenObserve Kubernetes Operator provides a comprehensive set of features for
 - **GitOps Ready**: Full support for GitOps workflows with version control and automated deployments
 - **Infrastructure as Code**: Define and manage observability configurations alongside application deployments
 - **Multi-Instance Support**: Manage multiple OpenObserve instances from a single Kubernetes cluster
+- **Comprehensive Resource Types**: Manage alerts, pipelines, functions, and configurations as code
 
 ### 🔄 Automated Lifecycle Management
 - **Resource Synchronization**: Automatic sync between Kubernetes resources and OpenObserve configurations
 - **Status Tracking**: Real-time monitoring of resource sync status with detailed condition reporting
 - **Generation Tracking**: Tracks resource generations to ensure consistency between desired and actual states
 - **Finalizer Support**: Proper cleanup of OpenObserve resources when Kubernetes resources are deleted
+- **Resource Types**: Full lifecycle management for alerts, pipelines, functions, and configurations
 
 ## Custom Resource Definitions (CRDs)
 
@@ -86,7 +88,39 @@ Manages alert definitions with comprehensive monitoring capabilities.
   - Last sync time
   - OpenObserve alert ID tracking
 
-### 3. OpenObservePipeline (o2pipeline)
+### 3. OpenObserveFunction (o2function, o2func)
+
+Manages VRL (Vector Remap Language) transformation functions for data processing.
+
+**Key Features:**
+
+#### Function Management
+- **VRL Support**: Write functions in Vector Remap Language for powerful data transformations
+- **Reusable Functions**: Create centralized functions that can be used across multiple pipelines
+- **Organization Scoping**: Functions are created at the organization level
+- **Name Validation**: Enforced naming patterns for consistency
+
+#### Testing & Validation
+- **Built-in Testing**: Define test cases with input and expected output
+- **Test Execution**: Automatic validation of function logic during deployment
+- **Error Reporting**: Detailed error messages for failed tests
+- **Multiple Test Cases**: Support for multiple test scenarios per function
+
+#### Use Cases
+- **Data Transformation**: Modify, enrich, or restructure log data
+- **Field Extraction**: Parse and extract fields from unstructured data
+- **Data Enrichment**: Add contextual information to events
+- **Format Conversion**: Convert between different data formats
+- **Filtering**: Implement complex filtering logic
+- **Aggregation**: Perform custom aggregations on data streams
+
+#### Integration
+- **Pipeline Integration**: Functions can be referenced in pipelines for data processing
+- **Stream Compatibility**: Works with logs, metrics, and traces
+- **Version Tracking**: Generation tracking for function updates
+- **Status Monitoring**: Real-time sync status with OpenObserve
+
+### 4. OpenObservePipeline (o2pipeline)
 
 Manages data processing pipelines with advanced transformation capabilities.
 
@@ -162,14 +196,14 @@ Manages data processing pipelines with advanced transformation capabilities.
 - **Dry Run Support**: Preview changes before applying
 - **Uninstall Management**:
   - Complete cleanup with finalizer removal
-  - Ordered resource deletion
+  - Ordered resource deletion (alerts, pipelines, functions, configurations)
   - Namespace cleanup
 - **Multi-Environment Support**:
   - Development, test, and production configurations
   - Environment-specific templates
 
 ### 🔧 Developer Features
-- **Sample Templates**: Comprehensive examples for all resource types
+- **Sample Templates**: Comprehensive examples for all resource types (alerts, pipelines, functions)
 - **Validation Webhooks**: Input validation at admission time
 - **Status Subresources**: Proper status update mechanisms
 - **Preserved Unknown Fields**: Future compatibility for API extensions
@@ -246,29 +280,18 @@ Manages data processing pipelines with advanced transformation capabilities.
 
 The following features are currently under active development and will be available in upcoming releases:
 
-### OpenObserveFunctions (o2function)
+### Enhanced Function Capabilities
 
-A new Custom Resource Definition for managing OpenObserve transformation functions as Kubernetes resources.
+While basic VRL function support is now available, the following advanced features are planned:
 
-**Planned Features:**
-- **VRL Function Management**: Deploy and manage Vector Remap Language (VRL) functions
+**Planned Enhancements:**
 - **JavaScript Functions**: Support for JavaScript-based transformation functions
-- **Function Libraries**: Organize functions into reusable libraries
-- **Version Control**: Track function versions and rollback capabilities
-- **Testing Framework**: Built-in testing support for functions
-- **Performance Metrics**: Monitor function execution performance
-- **Dependency Management**: Handle function dependencies and imports
+- **Function Libraries**: Organize functions into reusable libraries with imports
+- **Performance Metrics**: Monitor function execution performance and resource usage
+- **Dependency Management**: Handle function dependencies and external libraries
 - **Hot Reload**: Update functions without pipeline disruption
-
-**Use Cases:**
-- Data transformation and enrichment
-- Custom parsing logic
-- Field extraction and manipulation
-- Data validation and filtering
-- Format conversion
-- Custom aggregations
-- Pipeline data processing
-- Alert condition evaluation
+- **Function Versioning**: Advanced version control with rollback capabilities
+- **Function Marketplace**: Share and discover community functions
 
 ### OpenObserveAlertDestinations (o2alertdest)
 
@@ -370,8 +393,9 @@ The OpenObserve Kubernetes Operator provides a robust, enterprise-ready solution
 
 - Implement GitOps workflows for observability
 - Maintain consistency across environments
-- Automate operational tasks
+- Automate operational tasks with alerts, pipelines, and functions
 - Ensure security and compliance
 - Scale observability management efficiently
+- Transform and enrich data with VRL functions
 
 Whether you're managing a single OpenObserve instance or orchestrating a complex multi-environment setup, the operator provides the tools and capabilities needed for success.

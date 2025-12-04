@@ -1,0 +1,52 @@
+# Build artifacts
+/bin/
+/build/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.html
+coverage.txt
+
+# Dependency directories
+vendor/
+
+# Go workspace files
+go.work
+go.work.sum
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Kubernetes generated files
+manifests/_openobserve*.yaml
+manifests/_*.yaml
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+*.log
+
+# Debug files
+debug.test
+debug
+
+# Binary
+o2-k8s-operator
