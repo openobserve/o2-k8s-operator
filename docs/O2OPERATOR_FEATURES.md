@@ -280,19 +280,6 @@ Manages data processing pipelines with advanced transformation capabilities.
 
 The following features are currently under active development and will be available in upcoming releases:
 
-### Enhanced Function Capabilities
-
-While basic VRL function support is now available, the following advanced features are planned:
-
-**Planned Enhancements:**
-- **JavaScript Functions**: Support for JavaScript-based transformation functions
-- **Function Libraries**: Organize functions into reusable libraries with imports
-- **Performance Metrics**: Monitor function execution performance and resource usage
-- **Dependency Management**: Handle function dependencies and external libraries
-- **Hot Reload**: Update functions without pipeline disruption
-- **Function Versioning**: Advanced version control with rollback capabilities
-- **Function Marketplace**: Share and discover community functions
-
 ### OpenObserveAlertDestinations (o2alertdest)
 
 A dedicated Custom Resource for managing alert notification destinations as independent resources.
