@@ -1,0 +1,308 @@
+# ============================================================================
+#                    OpenObserve Function Template
+#                Complete Reference for All Attributes
+# ============================================================================
+# This template documents all available attributes for OpenObserve functions
+# with detailed explanations of mandatory and optional fields.
+#
+# Functions in OpenObserve are written in VRL (Vector Remap Language)
+# and are used to transform, enrich, or filter log data in real-time.
+# ============================================================================
+
+# ============================================================================
+# MANDATORY ATTRIBUTES
+# ============================================================================
+
+apiVersion: openobserve.ai/v1alpha1    # MANDATORY: API version (fixed value)
+kind: OpenObserveFunction              # MANDATORY: Resource type (fixed value)
+
+metadata:
+  name: function-name                  # MANDATORY: Kubernetes resource name
+       # - Must be unique within namespace
+       # - Used for kubectl operations (apply/delete/get)
+       # - Follows Kubernetes naming conventions
+       # - Examples: "basic-transformer", "k8s-log-processor"
+
+  namespace: o2operator               # OPTIONAL: Target namespace for this resource
+      # - Defaults to current kubectl context namespace
+      # - Must exist before applying this resource
+
+spec:
+  # ========================================================================
+  # Configuration Reference (MANDATORY)
+  # ========================================================================
+  configRef:
+    name: openobserve-main            # MANDATORY: Name of OpenObserveConfig resource
+      # - Must reference an existing OpenObserveConfig
+      # - Provides connection details to OpenObserve instance
+
+    namespace: o2operator            # OPTIONAL: Namespace of the OpenObserveConfig
+     # - Defaults to function's namespace if not specified
+     # - Use when config is in different namespace
+
+  # ========================================================================
+  # Function Identity (MANDATORY)
+  # ========================================================================
+  name: "function_name_in_o2"        # MANDATORY: Function name in OpenObserve
+      # - Must be unique within the organization
+      # - Use snake_case or camelCase convention
+      # - This is the name visible in OpenObserve UI
+      # - Examples: "json_parser", "logEnrichment"
+
+  # ========================================================================
+  # Function Code (MANDATORY)
+  # ========================================================================
+  function: |                        # MANDATORY: VRL function code
+    # The function body uses VRL (Vector Remap Language)
+    # Must end with "." to return the modified event
+
+    # Example transformations:
+
+    # 1. Add fields
+    .processed_at = now()
+    .environment = "production"
+
+    # 2. Parse JSON with error handling
+    if exists(.json_body) {
+      body, err = parse_json(.json_body)
+      if err == null {
+        .parsed = body
+      }
+    }
+
+    # 3. Conditional logic
+    if contains(string!(.message), "ERROR") {
+      .severity = "error"
+      .alert = true
+    }
+
+    # 4. Remove fields
+    del(.unnecessary_field)
+
+    # 5. String operations
+    .uppercase_msg = upcase(string!(.message))
+    .msg_length = length(string!(.message))
+
+    # 6. Array operations
+    if exists(.items) {
+      .item_count = length(.items)
+      .first_item = .items[0] ?? null
+    }
+
+    # MANDATORY: Return the modified event
+    .
+
+  # ========================================================================
+  # OPTIONAL ATTRIBUTES
+  # ========================================================================
+  
+  # OPTIONAL: Organization name in OpenObserve
+  # - Defaults to organization from configRef
+  # - Use to override the default organization
+  # - Must be a valid org in your OpenObserve instance
+  org: "dev"                         
+
+  # ========================================================================
+  # Test Configuration (OPTIONAL but RECOMMENDED)
+  # ========================================================================
+  # Testing allows you to validate your function before it's created/updated
+  # If test is enabled and fails, the function will NOT be applied
+
+  test:
+    # OPTIONAL: Enable test validation
+    # - true: Function MUST pass test to be created/updated
+    # - false: Skip testing (default if test section omitted)
+    # - Recommended: Always test complex functions
+    enabled: true                   
+
+    # OPTIONAL: Test events for validation
+    # - Required when test.enabled is true
+    # - Array of sample events to process
+    # - Should cover all code paths in your function
+    events:                        
+
+      # ====================================================================
+      # Test Event Format Options
+      # ====================================================================
+
+      # Option 1: Standard YAML format (most readable)
+      - _timestamp: 1735128523652186    # Timestamp in microseconds
+        message: "Application started"   # Log message
+        level: "info"                    # Custom fields
+        service: "api"
+        namespace: "production"
+        # Add any fields your function expects
+
+      # Option 2: Inline JSON format (compact)
+      - {"_timestamp": 1735128524652186, "message": "ERROR: Connection failed", "host": "db-01"}
+
+      # Option 3: Complex nested structures
+      - _timestamp: 1735128525652186
+        message: "Processing batch"
+        items:                          # Nested arrays
+          - id: "item1"
+            status: "processed"
+            value: 100
+          - id: "item2"
+            status: "pending"
+            value: 200
+        metadata:                       # Nested objects
+          labels:
+            environment: "production"
+            app: "batch-processor"
+            version: "v1.2.3"
+          annotations:
+            owner: "team-a"
+            criticality: "high"
+
+      # Option 4: Kubernetes-specific test events
+      - _timestamp: 1735128526652186
+        k8s_namespace_name: "production"      # K8s namespace
+        k8s_container_name: "app"             # Container name
+        k8s_deployment_name: "app-deployment" # Deployment
+        k8s_pod_name: "app-deployment-abc123" # Pod name
+        body: '{"level":"error","msg":"Database error"}'  # JSON string body
+        log_file_path: "/var/log/containers/app.log"
+        logtag: "F"
+
+# ============================================================================
+# COMPLETE EXAMPLE: Production-Ready Function
+# ============================================================================
+---
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObserveFunction
+metadata:
+  name: production-log-processor
+  namespace: o2operator
+spec:
+  configRef:
+    name: openobserve-main
+    namespace: o2operator
+
+  name: "production_log_processor"
+  org: "production"
+
+  function: |
+    # 1. Parse JSON from container logs
+    if .k8s_container_name == "app" || .k8s_container_name == "api" {
+      body, err = parse_json(.body)
+      if err == null {
+        .body = body
+        # Extract nested fields
+        .app_level = .body.level ?? "info"
+        .app_message = .body.message ?? ""
+        .app_timestamp = .body.timestamp ?? null
+      }
+    }
+
+    # 2. Determine severity
+    search_text = downcase(string!(.message) ?? string!(.app_message) ?? "")
+    .severity = if contains(search_text, "fatal") || contains(search_text, "critical") {
+      "critical"
+    } else if contains(search_text, "error") || contains(search_text, "exception") {
+      "error"
+    } else if contains(search_text, "warn") || contains(search_text, "warning") {
+      "warning"
+    } else if contains(search_text, "debug") {
+      "debug"
+    } else {
+      "info"
+    }
+
+    # 3. Add environment metadata
+    .environment = if .k8s_namespace_name == "production" {
+      "prod"
+    } else if .k8s_namespace_name == "staging" {
+      "stage"
+    } else {
+      "dev"
+    }
+
+    # 4. Add alerting flags
+    .alert_required = .severity == "critical" || .severity == "error"
+    .page_required = .severity == "critical"
+
+    # 5. Add processing metadata
+    .processed_at = now()
+    .processor_version = "1.0.0"
+
+    # 6. Clean up unnecessary fields
+    del(.log_file_path)
+    del(.logtag)
+    del(.stream)
+    del(.time)
+
+    # Return modified event
+    .
+
+  numArgs: 0
+  params: "string"
+  transType: 0
+
+  test:
+    enabled: true
+    events:
+      # Test critical error
+      - _timestamp: 1735128527652186
+        message: "CRITICAL: System failure detected"
+        k8s_namespace_name: "production"
+        k8s_container_name: "app"
+
+      # Test JSON parsing
+      - _timestamp: 1735128528652186
+        body: '{"level":"error","message":"Database connection lost","timestamp":"2024-12-03T10:00:00Z"}'
+        k8s_namespace_name: "staging"
+        k8s_container_name: "api"
+
+      # Test warning
+      - _timestamp: 1735128529652186
+        message: "WARNING: High memory usage detected (85%)"
+        k8s_namespace_name: "development"
+        k8s_container_name: "worker"
+
+# ============================================================================
+# NOTES AND BEST PRACTICES
+# ============================================================================
+#
+# 1. FUNCTION NAMING:
+#    - Use descriptive names that indicate the function's purpose
+#    - Keep consistent naming between metadata.name and spec.name
+#    - Examples: "json-parser", "k8s-enricher", "error-detector"
+#
+# 2. ERROR HANDLING:
+#    - Always use error handling for operations that might fail
+#    - Example: parse_json() returns (result, error) tuple
+#    - Check: if err == null { /* success */ }
+#
+# 3. FIELD ACCESS:
+#    - Use exists() to check if fields exist before accessing
+#    - Use ?? operator for default values: .field ?? "default"
+#    - Use string!() to coerce to string safely
+#
+# 4. TESTING:
+#    - Always enable testing for production functions
+#    - Include diverse test cases covering edge cases
+#    - Test both success and potential failure scenarios
+#
+# 5. PERFORMANCE:
+#    - Avoid unnecessary operations
+#    - Delete unused fields to reduce storage
+#    - Use early returns in conditionals when possible
+#
+# 6. KUBERNETES INTEGRATION:
+#    - Common K8s fields: k8s_namespace_name, k8s_pod_name, k8s_container_name
+#    - Parse container JSON logs when needed
+#    - Enrich with K8s metadata for better observability
+#
+# 7. VRL FUNCTIONS:
+#    - Common functions: parse_json(), contains(), length(), now()
+#    - String ops: upcase(), downcase(), split(), trim()
+#    - Type conversion: string!(), int!(), float!(), bool!()
+#    - Array/Object: length(), keys(), values(), merge()
+#
+# 8. DEBUGGING:
+#    - Use test.enabled: true during development
+#    - Check operator logs for detailed error messages
+#    - Validate VRL syntax before applying
+#
+# ============================================================================

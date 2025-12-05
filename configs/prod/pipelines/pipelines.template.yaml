@@ -1,0 +1,285 @@
+# ============================================================================
+# OpenObserve Pipeline Template - Complete Reference Guide
+# ============================================================================
+# This template provides a comprehensive reference for creating OpenObserve pipelines
+# with all available fields and their validation requirements.
+#
+# Version: v1alpha1
+# Last Updated: 2025-12-03
+#
+# IMPORTANT NOTES:
+# - Pipelines define data transformation and routing workflows in OpenObserve
+# - Data flows from source → through nodes → to destination
+# - Nodes are connected by edges to form a directed graph
+# - Fields marked (Required) must be present for the pipeline to be valid
+# - Fields marked (Optional) can be omitted and will use default values
+# ============================================================================
+
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObservePipeline
+metadata:
+  name: <pipeline-resource-name>  # Kubernetes resource name (lowercase, alphanumeric, hyphens)
+  namespace: <namespace>           # Target namespace for the pipeline resource
+spec:
+  # ============================================================================
+  # CONFIGURATION REFERENCE (Required)
+  # Links this pipeline to an OpenObserve instance configuration
+  # ============================================================================
+  configRef:
+    name: <config-name>         # Name of the OpenObserveConfig resource (Required)
+    namespace: <namespace>      # Namespace of the config (Optional, defaults to pipeline namespace)
+
+  # ============================================================================
+  # PIPELINE IDENTIFICATION & BASIC SETTINGS
+  # ============================================================================
+
+  # Pipeline name in OpenObserve (Required)
+  # - Must be unique within the organization
+  # - This is the internal name in OpenObserve, different from K8s resource name
+  # - Pattern: alphanumeric with underscores/hyphens
+  # - Example: "log_enrichment_pipeline", "metrics_aggregation"
+  name: "pipeline_name"
+
+  # Pipeline description (Optional but recommended)
+  # - Human-readable description of pipeline purpose
+  # - Max length: 500 characters
+  # - Should explain: what data it processes, transformations applied, output
+  description: "Enriches application logs with kubernetes metadata and routes to appropriate streams"
+
+  # Enable/disable the pipeline (Optional, defaults to true)
+  # - When false, pipeline won't process data but remains configured
+  # - Useful for temporarily disabling pipelines during maintenance
+  enabled: true
+
+  # Organization name (Optional)
+  # - Usually auto-determined from configRef
+  # - Override only if targeting different org
+  org: "default"
+
+  # ============================================================================
+  # DATA SOURCE CONFIGURATION (Required)
+  # Defines the input stream for the pipeline
+  # ============================================================================
+  source:
+    # For REALTIME pipelines:
+    # Stream name to read from (Required for realtime)
+    # - Must exist in OpenObserve
+    # - Examples: "application_logs", "kubernetes_events", "nginx_access"
+    streamName: "default"
+
+    # Stream type (Optional, defaults to "logs")
+    # - Allowed values: logs, metrics, traces
+    # - Determines available processing functions
+    streamType: "logs"
+
+    # Source type (Optional, defaults to "realtime")
+    # - "realtime": Processes data as it arrives
+    # - "scheduled": Batch processing at intervals with queries
+    sourceType: "realtime"
+
+    # For SCHEDULED pipelines with queries:
+    # Query condition (Required for scheduled pipelines)
+    queryCondition:
+      # Query type: "sql" or "promql"
+      type: "sql"  # or "promql"
+
+      # For SQL queries:
+      sql: "SELECT * FROM logs WHERE level = 'ERROR'"
+
+      # For PromQL queries:
+      promql: "rate(http_requests_total[5m])"
+
+      # PromQL specific condition (for promql type)
+      promqlCondition:
+        column: "value"
+        operator: ">="  # Operators: =, !=, <, <=, >, >=
+        value: 0
+        ignoreCase: false
+
+      # Search event type for derived streams
+      searchEventType: "derivedstream"
+
+    # Trigger condition (Required for scheduled pipelines)
+    triggerCondition:
+      period: 60           # Period in minutes
+      operator: "="        # Comparison operator
+      threshold: 0         # Threshold value
+      frequency: 60        # Frequency in minutes
+      frequencyType: "minutes"  # or "hours", "days"
+      silence: 0          # Silence period
+      timezone: "UTC"     # Timezone for scheduling
+      alignTime: true     # Align execution time
+
+  # ============================================================================
+  # PIPELINE NODES (Required)
+  # Define processing steps - minimum 1 node required
+  # ============================================================================
+  nodes:
+    # ==================================
+    # NODE TYPE 1: CONDITION NODE
+    # Filters data based on conditions
+    # ==================================
+    - id: "node1"       # Unique identifier within pipeline (Required)
+      type: "condition"         # Node type (Required)
+      name: "Filter Error Logs" # Human-readable name (Required)
+
+      # Configuration for this node type
+      config:
+        # Conditions can be simple or complex with AND/OR logic
+        conditions:
+          and:  # or use "or" for OR logic
+            - column: "level"
+              operator: "="
+              value: "ERROR"
+              ignore_case: false
+            - column: "status_code"
+              operator: ">="
+              value: "500"
+              ignore_case: false
+
+        # Alternative: Simple array format (implicitly AND)
+        # conditions:
+        #   - column: "severity"
+        #     operator: ">"
+        #     value: "5"
+
+    # ==================================
+    # NODE TYPE 2: FUNCTION NODE
+    # Transforms data using VRL functions
+    # ==================================
+    - id: "node2"
+      type: "function"
+      name: "Enrich with Metadata"
+
+      config:
+        # VRL (Vector Remap Language) function
+        function: functionName        #Function should be present in Openobserve
+        # Function execution settings
+        after_flatten: false  # Execute after flattening nested fields
+        num_args: 0          # Number of arguments (usually 0)
+
+    # ==================================
+    # NODE TYPE 3: STREAM OUTPUT NODE
+    # Routes data to another stream
+    # ==================================
+    - id: "output1"
+      type: "stream"
+      name: "Route to Error Stream"
+
+      config:
+        org_id: "default"           # Target organization
+        stream_name: "error_logs"   # Target stream name
+        stream_type: "logs"         # Target stream type
+
+  # ============================================================================
+  # PIPELINE EDGES (Optional but usually required)
+  # Define connections between nodes to create data flow
+  # ============================================================================
+  edges:
+    # source node will automatically connects to the first node
+    # Edge from first node to second node
+    - source: "node1" 
+      target: "node2"     # Target node ID (Required)
+
+    # Edge from second to third node
+    - source: "node2"
+      target: "output1"
+
+    # Edges can create branches (one source, multiple targets)
+    - source: "node1"
+      target: "redact-pii"
+
+    - source: "redact-pii"
+      target: "aggregate-metrics"
+
+    # Note: For realtime pipelines, edges from source to first nodes
+    # are automatically created if not specified
+
+# ============================================================================
+# VALIDATION RULES AND CONSTRAINTS
+# ============================================================================
+#
+# NODE RULES:
+# 1. Each node must have unique ID within pipeline
+# 2. Node type must be valid: condition, function, stream, query, redaction, aggregation
+# 3. At least one node is required
+# 4. Output nodes (stream) should not have outgoing edges
+# 5. Input nodes (query) should not have incoming edges for scheduled pipelines
+#
+# EDGE RULES:
+# 6. Source and target must reference existing node IDs
+# 7. No cycles allowed (directed acyclic graph)
+# 8. Edges are optional for single-node pipelines
+#
+# SOURCE RULES:
+# 9. Stream must exist in OpenObserve
+# 10. Stream type must be: logs, metrics, or traces
+# 11. Source type must be: realtime or scheduled
+#
+# SPECIAL CONFIGURATIONS:
+# 12. Scheduled pipelines must have a query node
+# 13. Realtime pipelines process data as it arrives
+# 14. Function nodes use VRL syntax
+# 15. Condition nodes support complex AND/OR logic
+#
+# DATA FLOW:
+# 16. Data flows from source → through nodes (following edges) → to outputs
+# 17. Nodes without incoming edges connect to source automatically (realtime)
+# 18. Multiple output nodes create data copies
+# 19. Branches allow parallel processing paths
+
+
+# ============================================================================
+# TROUBLESHOOTING GUIDE
+# ============================================================================
+#
+# COMMON ISSUES AND SOLUTIONS:
+#
+# 1. "Stream not found" Error:
+#    - Solution: Ensure source stream exists in OpenObserve
+#    - Check stream name and type match exactly
+#
+# 2. "Invalid node reference in edge":
+#    - Solution: Verify all edge source/target IDs match node IDs
+#    - Check for typos in node IDs
+#
+# 3. "Cycle detected in pipeline":
+#    - Solution: Ensure edges form a directed acyclic graph (DAG)
+#    - Remove any edges that create loops
+#
+# 4. "Function compilation error":
+#    - Solution: Check VRL syntax in function nodes
+#    - Test functions in OpenObserve UI first
+#
+# 5. "No output nodes defined":
+#    - Solution: Add at least one stream node with ioType: "output"
+#    - Or ensure data routes to a destination
+#
+# 6. Pipeline not processing data:
+#    - Check: Is enabled: true?
+#    - Check: Is source stream receiving data?
+#    - Check: Are conditions too restrictive?
+#
+# 7. Scheduled pipeline not running:
+#    - Check: Query node properly configured?
+#    - Check: Trigger condition frequency set?
+#    - Check: Source type is "scheduled"?
+#
+# 8. Data not appearing in output stream:
+#    - Check: Output stream exists and is configured correctly
+#    - Check: Edge connections are correct
+#    - Check: Conditions aren't filtering out all data
+#
+# 9. Performance issues:
+#    - Simplify complex VRL functions
+#    - Reduce number of branches
+#    - Consider sampling for high-volume streams
+#
+# 10. VRL function errors:
+#     - Use error handling: parse_json!() vs parse_json()
+#     - Check field existence before accessing: exists(.field)
+#     - Test functions incrementally
+
+# ============================================================================
+# END OF TEMPLATE
+# ============================================================================
