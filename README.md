@@ -1,4 +1,4 @@
-# OpenObserve Kubernetes Operator (v1.0.4)
+# OpenObserve Kubernetes Operator (v1.0.5)
 
 A Kubernetes operator that enables declarative management of resources of OpenObserve Enterprise (alerts, pipelines, functions) as native Kubernetes Custom Resources.
 
@@ -22,6 +22,8 @@ The OpenObserve Operator allows you to manage OpenObserve Enterprise configurati
 
 - **OpenObserveConfig**: Connection configuration for OpenObserve Enterprise instances
 - **Alert**: OpenObserve Enterprise alert definitions
+- **AlertTemplate**: Templates for formatting alert notifications (HTTP or email)
+- **Destination**: Alert and pipeline destination definitions (HTTP or email)
 - **Pipeline**: OpenObserve Enterprise data pipeline definitions
 - **Function**: OpenObserve Enterprise VRL transformation functions
 
@@ -66,6 +68,8 @@ kubectl apply -f configs/prod/o2prod-config.yaml
 
 Use templates from the `samples/` directory:
 - `samples/alerts/` - Alert configuration examples
+- `samples/alerttemplates/` - Alert template examples for formatting notifications
+- `samples/destinations/` - Destination examples for alerts and pipelines
 - `samples/pipelines/` - Pipeline configuration examples
 - `samples/functions/` - Function transformation examples
 
@@ -156,7 +160,58 @@ spec:
     - slack-alerts
 ```
 
-4. Create a Function:
+4. Create an AlertTemplate:
+
+```yaml
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObserveAlertTemplate
+metadata:
+  name: slack-webhook-template
+spec:
+  configRef:
+    name: production
+
+  name: slack-webhook-template
+  title: "Alert: {alert_name}"
+  body: |
+    {
+      "text": "🚨 *Alert Triggered*",
+      "blocks": [
+        {
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "*Alert:* {alert_name}\n*Stream:* {stream_name}\n*Severity:* {severity}\n*Time:* {triggered_at}"
+          }
+        }
+      ]
+    }
+  type: http
+  isDefault: false
+```
+
+5. Create a Destination:
+
+```yaml
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObserveDestination
+metadata:
+  name: slack-alerts
+spec:
+  configRef:
+    name: production
+
+  name: slack-alerts-destination
+  type: http
+  url: https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+  method: post
+  headers:
+    Content-Type: application/json
+  template: slack-webhook-template
+  skipTlsVerify: false
+```
+
+6. Create a Function:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
@@ -196,6 +251,8 @@ spec:
 - [API Reference](docs/api.md) (coming soon)
 - [Samples](samples/)
   - [Alert Examples](samples/alerts/)
+  - [Alert Template Examples](samples/alerttemplates/)
+  - [Destination Examples](samples/destinations/)
   - [Pipeline Examples](samples/pipelines/)
   - [Function Examples](samples/functions/)
   - [Function Template Reference](samples/functions/functions.template)
@@ -224,7 +281,7 @@ TBD
 
 The uninstall process (`./deploy.sh --uninstall`) will:
 1. Remove finalizers from all custom resources
-2. Delete all OpenObserve custom resources (alerts, pipelines, functions)
+2. Delete all OpenObserve custom resources (alerts, alerttemplates, destinations, pipelines, functions)
 3. Remove the operator deployment and services
 4. Delete RBAC resources
 5. Remove CRDs

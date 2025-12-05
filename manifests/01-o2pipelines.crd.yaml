@@ -243,6 +243,9 @@ spec:
               observedGeneration:
                 type: integer
                 format: int64
+              deletionRetryCount:
+                type: integer
+                description: Tracks the number of deletion attempts
     subresources:
       status: {}
     additionalPrinterColumns:

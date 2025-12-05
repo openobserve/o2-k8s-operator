@@ -11,14 +11,14 @@ The OpenObserve Kubernetes Operator provides a comprehensive set of features for
 - **GitOps Ready**: Full support for GitOps workflows with version control and automated deployments
 - **Infrastructure as Code**: Define and manage observability configurations alongside application deployments
 - **Multi-Instance Support**: Manage multiple OpenObserve instances from a single Kubernetes cluster
-- **Comprehensive Resource Types**: Manage alerts, pipelines, functions, and configurations as code
+- **Comprehensive Resource Types**: Manage alerts, alert templates, destinations, pipelines, functions, and configurations as code
 
 ### 🔄 Automated Lifecycle Management
 - **Resource Synchronization**: Automatic sync between Kubernetes resources and OpenObserve configurations
 - **Status Tracking**: Real-time monitoring of resource sync status with detailed condition reporting
 - **Generation Tracking**: Tracks resource generations to ensure consistency between desired and actual states
 - **Finalizer Support**: Proper cleanup of OpenObserve resources when Kubernetes resources are deleted
-- **Resource Types**: Full lifecycle management for alerts, pipelines, functions, and configurations
+- **Resource Types**: Full lifecycle management for alerts, alert templates, destinations, pipelines, functions, and configurations
 
 ## Custom Resource Definitions (CRDs)
 
@@ -88,7 +88,97 @@ Manages alert definitions with comprehensive monitoring capabilities.
   - Last sync time
   - OpenObserve alert ID tracking
 
-### 3. OpenObserveFunction (o2function, o2func)
+### 3. OpenObserveAlertTemplate (o2alerttemplate, alerttemplate)
+
+Manages alert notification templates for formatting alert messages across different channels.
+
+**Key Features:**
+
+#### Template Management
+- **Multiple Template Types**:
+  - HTTP templates for webhooks (Slack, PagerDuty, etc.)
+  - Email templates for email notifications
+- **Template Variables**: Support for dynamic variables in templates
+- **Default Templates**: Mark templates as default for automatic use
+- **Organization Scoping**: Templates are created at the organization level
+
+#### Template Formatting
+- **Title Templates**: Dynamic titles with variable substitution
+- **Body Templates**:
+  - JSON format for HTTP webhooks
+  - HTML/text format for emails
+  - Support for complex nested structures
+- **Variable Placeholders**:
+  - `{alert_name}`: Name of the triggered alert
+  - `{stream_name}`: Source stream name
+  - `{severity}`: Alert severity level
+  - `{triggered_at}`: Timestamp when alert was triggered
+  - `{org_name}`: Organization name
+  - `{threshold}`: Configured threshold value
+  - Custom variables from alert context
+
+#### Use Cases
+- **Slack Notifications**: Formatted messages with blocks and markdown
+- **PagerDuty Integration**: Structured incident creation
+- **Email Alerts**: Rich HTML email notifications
+- **Custom Webhooks**: Tailored JSON payloads for any HTTP endpoint
+- **Microsoft Teams**: Adaptive cards and formatted messages
+- **Generic HTTP**: Flexible templates for any webhook service
+
+### 4. OpenObserveDestination (o2dest, o2destination)
+
+Manages destinations for both alerts and pipelines, defining where data and notifications are sent.
+
+**Key Features:**
+
+#### Alert Destinations
+- **Destination Types**:
+  - HTTP webhooks (Slack, PagerDuty, custom endpoints)
+  - Email (SMTP) destinations
+  - SNS (Amazon Simple Notification Service)
+- **Template Integration**: Reference alert templates for message formatting
+- **Authentication Support**:
+  - Bearer tokens
+  - API keys in headers
+  - Custom headers
+- **TLS Configuration**: Optional TLS certificate verification
+
+#### Pipeline Destinations
+- **Destination Types**:
+  - OpenObserve instances (for data replication)
+  - Splunk
+  - New Relic
+  - Elasticsearch
+  - Dynatrace
+  - Datadog
+  - Custom HTTP endpoints
+- **Output Formats**:
+  - JSON (standard or nested event format)
+  - Elasticsearch bulk format
+  - Custom formats per destination type
+- **Metadata Support**: Additional metadata for destination configuration
+
+#### Configuration Options
+- **HTTP Configuration**:
+  - URL endpoint
+  - HTTP method (POST, PUT, GET)
+  - Custom headers
+  - Request timeout settings
+- **Email Configuration**:
+  - Multiple recipient emails
+  - Template selection
+- **SNS Configuration**:
+  - AWS region
+  - SNS Topic ARN
+  - Action ID
+
+#### Advanced Features
+- **Skip TLS Verify**: Development/testing with self-signed certificates
+- **Category Detection**: Automatic categorization as alert or pipeline destination
+- **Error Handling**: Detailed error reporting and retry logic
+- **Status Tracking**: Real-time sync status with destination services
+
+### 5. OpenObserveFunction (o2function, o2func)
 
 Manages VRL (Vector Remap Language) transformation functions for data processing.
 
@@ -120,7 +210,7 @@ Manages VRL (Vector Remap Language) transformation functions for data processing
 - **Version Tracking**: Generation tracking for function updates
 - **Status Monitoring**: Real-time sync status with OpenObserve
 
-### 4. OpenObservePipeline (o2pipeline)
+### 6. OpenObservePipeline (o2pipeline)
 
 Manages data processing pipelines with advanced transformation capabilities.
 
@@ -196,14 +286,14 @@ Manages data processing pipelines with advanced transformation capabilities.
 - **Dry Run Support**: Preview changes before applying
 - **Uninstall Management**:
   - Complete cleanup with finalizer removal
-  - Ordered resource deletion (alerts, pipelines, functions, configurations)
+  - Ordered resource deletion (alerts, alert templates, destinations, pipelines, functions, configurations)
   - Namespace cleanup
 - **Multi-Environment Support**:
   - Development, test, and production configurations
   - Environment-specific templates
 
 ### 🔧 Developer Features
-- **Sample Templates**: Comprehensive examples for all resource types (alerts, pipelines, functions)
+- **Sample Templates**: Comprehensive examples for all resource types (alerts, alert templates, destinations, pipelines, functions)
 - **Validation Webhooks**: Input validation at admission time
 - **Status Subresources**: Proper status update mechanisms
 - **Preserved Unknown Fields**: Future compatibility for API extensions
@@ -280,29 +370,17 @@ Manages data processing pipelines with advanced transformation capabilities.
 
 The following features are currently under active development and will be available in upcoming releases:
 
-### OpenObserveAlertDestinations (o2alertdest)
+### Enhanced Destination Features
 
-A dedicated Custom Resource for managing alert notification destinations as independent resources.
+While the OpenObserveDestination CRD is now available with support for basic alert and pipeline destinations, the following enhanced features are planned:
 
-**Planned Features:**
-- **Destination Types**:
-  - Slack channels
-  - Email (SMTP)
-  - PagerDuty
+**Additional Destination Types (Coming Soon):**
+- **Alert Destinations**:
   - OpsGenie
-  - Microsoft Teams
-  - Webhooks
   - Discord
   - Telegram
-  - Custom HTTP endpoints
-
-- **Configuration Management**:
-  - Centralized credential storage
-  - Template management for notifications
-  - Custom formatting per destination
-  - Rate limiting and throttling
-  - Retry policies
-  - Delivery confirmation tracking
+  - Microsoft Teams (native integration)
+  - Webhooks with custom authentication schemes
 
 - **Advanced Features**:
   - Alert routing rules
@@ -312,28 +390,20 @@ A dedicated Custom Resource for managing alert notification destinations as inde
   - Escalation policies
   - Acknowledgment tracking
   - Two-way integrations
-
-**Integration with Alerts:**
-- Reference destinations by name in alert configurations
-- Share destinations across multiple alerts
-- Dynamic destination selection based on alert attributes
-- Multi-channel notifications
-- Fallback destination support
+  - Rate limiting and throttling
+  - Delivery confirmation tracking
 
 ### OpenObserveRemoteDestinations (o2remotedest)
 
-A Custom Resource for managing remote data destinations for pipelines and data export.
+An advanced Custom Resource for managing complex remote data destinations beyond the current OpenObserveDestination capabilities.
 
 **Planned Features:**
-- **Destination Types**:
-  - OpenObserve clusters (cross-cluster replication)
+- **Advanced Destination Types**:
   - Object storage (S3, GCS, Azure Blob Storage)
   - Message queues (Kafka, RabbitMQ, Amazon SQS, Azure Service Bus)
   - Time-series databases (InfluxDB, Prometheus, VictoriaMetrics)
   - Data warehouses (Snowflake, BigQuery, Redshift)
-  - Elasticsearch/OpenSearch clusters
-  - Splunk instances
-  - DataDog, New Relic, Grafana Cloud
+  - Grafana Cloud
 
 - **Data Management**:
   - Batch and streaming modes
@@ -381,8 +451,10 @@ The OpenObserve Kubernetes Operator provides a robust, enterprise-ready solution
 - Implement GitOps workflows for observability
 - Maintain consistency across environments
 - Automate operational tasks with alerts, pipelines, and functions
+- Manage alert templates and destinations as code
 - Ensure security and compliance
 - Scale observability management efficiently
 - Transform and enrich data with VRL functions
+- Configure flexible notification channels and data routing
 
 Whether you're managing a single OpenObserve instance or orchestrating a complex multi-environment setup, the operator provides the tools and capabilities needed for success.

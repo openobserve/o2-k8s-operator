@@ -149,6 +149,9 @@ spec:
               lastError:
                 type: string
                 description: Last error encountered during reconciliation
+              deletionRetryCount:
+                type: integer
+                description: Tracks the number of deletion attempts
     subresources:
       status: {}
     additionalPrinterColumns:

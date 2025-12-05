@@ -12,7 +12,10 @@ kubectl apply -f manifests/00-namespace.yaml
 ```bash
 kubectl apply -f manifests/01-o2configs.crd.yaml
 kubectl apply -f manifests/01-o2alerts.crd.yaml
+kubectl apply -f manifests/01-o2alerttemplates.crd.yaml
+kubectl apply -f manifests/01-o2destinations.crd.yaml
 kubectl apply -f manifests/01-o2pipelines.crd.yaml
+kubectl apply -f manifests/01-o2functions.crd.yaml
 ```
 
 ### Step 3: Set up RBAC
@@ -64,7 +67,7 @@ To manually uninstall the operator:
 
 ```bash
 # 1. Remove any custom resources (this example removes all in all namespaces)
-kubectl delete openobserveconfigs,openobservealerts,openobservepipelines --all -A
+kubectl delete openobserveconfigs,openobservealerts,openobservealerttemplates,openobservedestinations,openobservepipelines,openobservefunctions --all -A
 
 # 2. Delete webhook configuration
 kubectl delete -f manifests/04-webhook.yaml
@@ -78,7 +81,10 @@ kubectl delete -f manifests/02-rbac.yaml
 # 5. Delete CRDs
 kubectl delete -f manifests/01-o2configs.crd.yaml
 kubectl delete -f manifests/01-o2alerts.crd.yaml
+kubectl delete -f manifests/01-o2alerttemplates.crd.yaml
+kubectl delete -f manifests/01-o2destinations.crd.yaml
 kubectl delete -f manifests/01-o2pipelines.crd.yaml
+kubectl delete -f manifests/01-o2functions.crd.yaml
 
 # 6. Delete namespace (this will also delete the webhook secret)
 kubectl delete -f manifests/00-namespace.yaml

@@ -166,55 +166,151 @@ EOF
     echo -e "${GREEN}✓ Webhook certificates generated and secret created${NC}"
 }
 
+# Function to check if resource is stuck in deletion
+check_stuck_resource() {
+    local resource_type=$1
+    local name=$2
+    local namespace=$3
+
+    # Check if resource has deletionTimestamp set
+    deletion_timestamp=$(kubectl get $resource_type $name -n $namespace -o jsonpath='{.metadata.deletionTimestamp}' 2>/dev/null)
+
+    if [ -n "$deletion_timestamp" ]; then
+        return 0  # Resource is stuck
+    else
+        return 1  # Resource is not stuck
+    fi
+}
+
+# Function to remove finalizers from stuck resources
+remove_finalizers_if_stuck() {
+    local resource_type=$1
+    local resource_plural=$2
+    local resource_short=$3
+
+    echo -e "${YELLOW}Checking for stuck ${resource_type} resources...${NC}"
+
+    local found_stuck=false
+
+    # Get all resources with namespace and name
+    while IFS= read -r line; do
+        if [ -z "$line" ]; then
+            continue
+        fi
+
+        namespace=$(echo $line | awk '{print $1}')
+        name=$(echo $line | awk '{print $2}')
+
+        if [ -z "$namespace" ] || [ -z "$name" ]; then
+            continue
+        fi
+
+        # Check if resource is stuck (has deletionTimestamp)
+        if check_stuck_resource $resource_short $name $namespace; then
+            echo -e "${YELLOW}  Found stuck resource: $name in namespace $namespace${NC}"
+            found_stuck=true
+
+            # Remove finalizers
+            echo -e "${YELLOW}  Removing finalizers from $name...${NC}"
+            kubectl patch $resource_short $name -n $namespace \
+                -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || \
+            kubectl patch $resource_short $name -n $namespace \
+                --type json -p='[{"op": "remove", "path": "/metadata/finalizers"}]' 2>/dev/null || true
+
+            # Wait a moment for the resource to be deleted
+            sleep 1
+
+            # Check if resource still exists
+            if kubectl get $resource_short $name -n $namespace &>/dev/null; then
+                echo -e "${RED}  Warning: $name still exists after removing finalizers${NC}"
+            else
+                echo -e "${GREEN}  ✓ $name deleted successfully${NC}"
+            fi
+        fi
+    done < <(kubectl get $resource_plural --all-namespaces -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name --no-headers 2>/dev/null)
+
+    if [ "$found_stuck" = false ]; then
+        echo -e "${GREEN}  No stuck ${resource_type} resources found${NC}"
+    fi
+}
+
 # Function to uninstall the operator
 uninstall_operator() {
     echo -e "${YELLOW}Uninstalling OpenObserve Operator...${NC}"
 
-    # Delete webhook configuration
+    # First, delete webhook configuration to prevent validation during cleanup
+    echo -e "${YELLOW}Removing webhook configuration...${NC}"
     kubectl delete validatingwebhookconfiguration openobserve-validating-webhook --ignore-not-found=true
 
-    # First, remove finalizers from all custom resources to prevent them from getting stuck
-    echo -e "${YELLOW}Removing finalizers from custom resources...${NC}"
+    # Stop the operator deployment to prevent it from interfering
+    echo -e "${YELLOW}Stopping operator deployment...${NC}"
+    kubectl scale deployment/${OPERATOR_NAME} -n ${NAMESPACE} --replicas=0 --timeout=30s 2>/dev/null || true
 
-    # Remove finalizers from OpenObserveAlerts
-    for resource in $(kubectl get openobservealerts --all-namespaces -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name --no-headers 2>/dev/null); do
-        namespace=$(echo $resource | awk '{print $1}')
-        name=$(echo $resource | awk '{print $2}')
-        kubectl patch openobservealert $name -n $namespace --type json -p='[{"op": "remove", "path": "/metadata/finalizers"}]' 2>/dev/null || true
+    # Wait for operator pods to terminate
+    kubectl wait --for=delete pod -l app=${OPERATOR_NAME} -n ${NAMESPACE} --timeout=30s 2>/dev/null || true
+
+    # Check for and remove finalizers from stuck resources
+    echo -e "${YELLOW}Checking for stuck resources and removing finalizers...${NC}"
+
+    # Process each resource type
+    remove_finalizers_if_stuck "OpenObserveAlert" "openobservealerts" "openobservealert"
+    remove_finalizers_if_stuck "OpenObservePipeline" "openobservepipelines" "openobservepipeline"
+    remove_finalizers_if_stuck "OpenObserveFunction" "openobservefunctions" "openobservefunction"
+    remove_finalizers_if_stuck "OpenObserveDestination" "openobservedestinations" "openobservedestination"
+    remove_finalizers_if_stuck "OpenObserveAlertTemplate" "openobservealerttemplates" "openobservealerttemplate"
+    remove_finalizers_if_stuck "OpenObserveConfig" "openobserveconfigs" "openobserveconfig"
+
+
+    # Now delete all resources
+    echo -e "${YELLOW}Deleting operator resources...${NC}"
+    kubectl delete -f manifests/04-webhook.yaml --ignore-not-found=true 2>/dev/null || true
+    kubectl delete -f manifests/03-deployment.yaml --ignore-not-found=true 2>/dev/null || true
+    kubectl delete -f manifests/02-rbac.yaml --ignore-not-found=true 2>/dev/null || true
+
+    # Try to delete all custom resources (with timeout to prevent hanging)
+    echo -e "${YELLOW}Deleting custom resources...${NC}"
+    kubectl delete openobservealerts --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete openobservepipelines --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete openobservefunctions --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete openobservedestinations --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete openobservealerttemplates --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete openobserveconfigs --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+
+    # Final check - if any resources still exist with finalizers, force remove them
+    echo -e "${YELLOW}Final cleanup check...${NC}"
+    for resource_type in openobservealerts openobservepipelines openobservefunctions openobservedestinations openobservealerttemplates openobserveconfigs; do
+        remaining=$(kubectl get $resource_type --all-namespaces --no-headers 2>/dev/null | wc -l)
+        if [ "$remaining" -gt 0 ]; then
+            echo -e "${YELLOW}  Force removing remaining $resource_type resources...${NC}"
+            kubectl get $resource_type --all-namespaces -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name --no-headers 2>/dev/null | \
+            while read namespace name; do
+                if [ -n "$namespace" ] && [ -n "$name" ]; then
+                    kubectl patch ${resource_type%s} $name -n $namespace \
+                        -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+                fi
+            done
+        fi
     done
-
-    # Remove finalizers from OpenObservePipelines
-    for resource in $(kubectl get openobservepipelines --all-namespaces -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name --no-headers 2>/dev/null); do
-        namespace=$(echo $resource | awk '{print $1}')
-        name=$(echo $resource | awk '{print $2}')
-        kubectl patch openobservepipeline $name -n $namespace --type json -p='[{"op": "remove", "path": "/metadata/finalizers"}]' 2>/dev/null || true
-    done
-
-    # Remove finalizers from OpenObserveConfigs
-    for resource in $(kubectl get openobserveconfigs --all-namespaces -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name --no-headers 2>/dev/null); do
-        namespace=$(echo $resource | awk '{print $1}')
-        name=$(echo $resource | awk '{print $2}')
-        kubectl patch openobserveconfig $name -n $namespace --type json -p='[{"op": "remove", "path": "/metadata/finalizers"}]' 2>/dev/null || true
-    done
-
-
-    # Delete all resources in reverse order
-    kubectl delete -f manifests/04-webhook.yaml --ignore-not-found=true
-    kubectl delete -f manifests/03-deployment.yaml --ignore-not-found=true
-    kubectl delete -f manifests/02-rbac.yaml --ignore-not-found=true
-
-    # Delete all custom resources before CRDs (with timeout to prevent hanging)
-    kubectl delete openobservealerts --all --all-namespaces --ignore-not-found=true --timeout=10s
-    kubectl delete openobservepipelines --all --all-namespaces --ignore-not-found=true --timeout=10s
-    kubectl delete openobserveconfigs --all --all-namespaces --ignore-not-found=true --timeout=10s
 
     # Delete CRDs
-    kubectl delete -f manifests/01-o2configs.crd.yaml --ignore-not-found=true
-    kubectl delete -f manifests/01-o2alerts.crd.yaml --ignore-not-found=true
-    kubectl delete -f manifests/01-o2pipelines.crd.yaml --ignore-not-found=true
+    echo -e "${YELLOW}Deleting Custom Resource Definitions...${NC}"
+    kubectl delete -f manifests/01-o2configs.crd.yaml --ignore-not-found=true 2>/dev/null || true
+    kubectl delete -f manifests/01-o2alerts.crd.yaml --ignore-not-found=true 2>/dev/null || true
+    kubectl delete -f manifests/01-o2pipelines.crd.yaml --ignore-not-found=true 2>/dev/null || true
+    kubectl delete -f manifests/01-o2functions.crd.yaml --ignore-not-found=true 2>/dev/null || true
+    kubectl delete -f manifests/01-o2alerttemplates.crd.yaml --ignore-not-found=true 2>/dev/null || true
+    kubectl delete -f manifests/01-o2destinations.crd.yaml --ignore-not-found=true 2>/dev/null || true
 
     # Delete namespace (this will delete everything in it)
-    kubectl delete namespace ${NAMESPACE} --ignore-not-found=true
+    echo -e "${YELLOW}Deleting namespace ${NAMESPACE}...${NC}"
+    kubectl delete namespace ${NAMESPACE} --ignore-not-found=true --timeout=30s 2>/dev/null || true
+
+    # Check if namespace is stuck
+    if kubectl get namespace ${NAMESPACE} &>/dev/null; then
+        echo -e "${YELLOW}Namespace ${NAMESPACE} is stuck, removing finalizers...${NC}"
+        kubectl patch namespace ${NAMESPACE} -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+        kubectl delete namespace ${NAMESPACE} --ignore-not-found=true --force --grace-period=0 2>/dev/null || true
+    fi
 
     echo -e "${GREEN}✓ OpenObserve Operator uninstalled successfully${NC}"
     exit 0
@@ -254,6 +350,9 @@ deploy_operator() {
     kubectl apply ${DRY_RUN} -f manifests/01-o2configs.crd.yaml
     kubectl apply ${DRY_RUN} -f manifests/01-o2alerts.crd.yaml
     kubectl apply ${DRY_RUN} -f manifests/01-o2pipelines.crd.yaml
+    kubectl apply ${DRY_RUN} -f manifests/01-o2functions.crd.yaml
+    kubectl apply ${DRY_RUN} -f manifests/01-o2alerttemplates.crd.yaml
+    kubectl apply ${DRY_RUN} -f manifests/01-o2destinations.crd.yaml
     echo -e "${GREEN}✓ CRDs installed${NC}"
 
     # Wait for CRDs to be established
@@ -262,7 +361,10 @@ deploy_operator() {
         kubectl wait --for condition=established --timeout=60s \
             crd/openobserveconfigs.openobserve.ai \
             crd/openobservepipelines.openobserve.ai \
-            crd/openobservealerts.openobserve.ai
+            crd/openobservealerts.openobserve.ai \
+            crd/openobservefunctions.openobserve.ai \
+            crd/openobservealerttemplates.openobserve.ai \
+            crd/openobservedestinations.openobserve.ai
         echo -e "${GREEN}✓ CRDs are ready${NC}"
     else
         echo -e "${YELLOW}Skipping CRD wait (dry-run mode)${NC}"

@@ -43,7 +43,10 @@ The `deploy.sh` script handles the complete lifecycle of operator management.
 2. **CRD Files** - Custom Resource Definitions:
    - `01-o2configs.crd.yaml` - OpenObserveConfig for connection settings
    - `01-o2alerts.crd.yaml` - OpenObserveAlert for alert definitions
+   - `01-o2alerttemplates.crd.yaml` - OpenObserveAlertTemplate for notification templates
+   - `01-o2destinations.crd.yaml` - OpenObserveDestination for alert and pipeline destinations
    - `01-o2pipelines.crd.yaml` - OpenObservePipeline for data pipeline configurations
+   - `01-o2functions.crd.yaml` - OpenObserveFunction for VRL transformation functions
 3. **02-rbac.yaml** - Sets up RBAC:
    - ServiceAccount for the operator
    - ClusterRole with required permissions
@@ -91,6 +94,29 @@ Each configuration file contains:
 - **alert-aggregation-example.yaml** - Aggregation examples
 - **alert.sample.yaml** - General sample alert
 
+### Alert Template Samples (`samples/alerttemplates/`)
+
+5 alert template examples for different notification formats:
+- **alerttemplate.template.yaml** - Complete template with all available options
+- **email-alert-template.yaml** - Email notification template
+- **http-alert-template.yaml** - Generic HTTP webhook template
+- **http-pagerduty-webhook-template.yaml** - PagerDuty integration template
+- **http-slack-webhook-template.yaml** - Slack notification template
+
+### Destination Samples (`samples/destinations/`)
+
+Multiple destination configurations for alerts and pipelines:
+- **destination.template.yaml** - Complete destination with all available options
+- **email-alert-destination.yaml** - Email destination for alerts
+- **http-alert-destination.yaml** - HTTP webhook destination for alerts
+- **pipeline-custom-destination.yaml** - Custom HTTP destination for pipelines
+- **pipeline-datadog-destination.yaml** - Datadog integration for pipelines
+- **pipeline-dynatrace-destination.yaml** - Dynatrace integration for pipelines
+- **pipeline-elasticsearch-destination.yaml** - Elasticsearch destination
+- **pipeline-newrelic-destination.yaml** - New Relic integration
+- **pipeline-openobserve-desntination.yaml** - OpenObserve to OpenObserve replication
+- **pipeline-splunk-destination.yaml** - Splunk integration
+
 ### Pipeline Samples (`samples/pipelines/`)
 
 5 pipeline configuration examples:
@@ -99,3 +125,9 @@ Each configuration file contains:
 - **srctodest-two-branches.yaml** - Multi-branch pipeline with conditions
 - **querysrctodest-sql.yaml** - SQL query-based data transformation
 - **querysrctodest-promql.yaml** - PromQL query-based pipeline
+
+### Function Samples (`samples/functions/`)
+
+VRL transformation function examples:
+- **basic-function.yaml** - Basic VRL function example
+- **functions.template** - Template reference for function configuration

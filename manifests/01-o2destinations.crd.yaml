@@ -1,0 +1,168 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: openobservedestinations.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: OpenObserveDestination
+    listKind: OpenObserveDestinationList
+    plural: openobservedestinations
+    singular: openobservedestination
+    shortNames:
+    - o2dest
+    - o2destination
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - configRef
+            - name
+            - type
+            properties:
+              configRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                    description: Name of the OpenObserveConfig resource
+                  namespace:
+                    type: string
+                    description: Namespace of the OpenObserveConfig resource (defaults to same namespace)
+              name:
+                type: string
+                pattern: "^[a-zA-Z0-9_-]+$"
+                description: Unique identifier for the destination
+              org:
+                type: string
+                description: Organization name to create the destination in. If not specified, uses the organization from ConfigRef.
+              type:
+                type: string
+                enum:
+                - http
+                - email
+                - sns
+                description: Type of destination (http, email, or sns)
+              destinationTypeName:
+                type: string
+                enum:
+                - ""
+                - custom
+                - openobserve
+                - splunk
+                - newrelic
+                - elasticsearch
+                - dynatrace
+                - datadog
+                description: Destination type name for pipeline destinations (only for http type)
+              url:
+                type: string
+                description: URL endpoint for HTTP destinations
+              method:
+                type: string
+                enum:
+                - post
+                - put
+                - get
+                default: post
+                description: HTTP method for HTTP destinations
+              headers:
+                type: object
+                additionalProperties:
+                  type: string
+                description: HTTP headers to include in the request
+              metadata:
+                type: object
+                additionalProperties:
+                  type: string
+                description: Additional metadata for the destination
+              skipTlsVerify:
+                type: boolean
+                default: false
+                description: Whether to skip TLS certificate verification
+              outputFormat:
+                x-kubernetes-preserve-unknown-fields: true
+                description: Output format for the destination (json, nestedevent, or elasticsearch bulk format)
+              emails:
+                type: array
+                items:
+                  type: string
+                  format: email
+                description: Email addresses for email destinations
+              template:
+                type: string
+                description: Name of the alert template to use (for alert destinations)
+              actionId:
+                type: string
+                description: Action ID for SNS destinations
+              awsRegion:
+                type: string
+                description: AWS region for SNS destinations
+              snsTopicArn:
+                type: string
+                description: SNS Topic ARN for SNS destinations
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      format: int64
+              lastSyncTime:
+                type: string
+                format: date-time
+              observedGeneration:
+                type: integer
+                format: int64
+              destinationCategory:
+                type: string
+                enum:
+                - alert
+                - pipeline
+                description: Automatically determined category based on type and destinationTypeName
+              deletionRetryCount:
+                type: integer
+                description: Tracks the number of deletion attempts
+    additionalPrinterColumns:
+    - name: Type
+      type: string
+      jsonPath: .spec.type
+    - name: Category
+      type: string
+      jsonPath: .status.destinationCategory
+    - name: Destination-Type
+      type: string
+      jsonPath: .spec.destinationTypeName
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+    subresources:
+      status: {}
