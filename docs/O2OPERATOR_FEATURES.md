@@ -251,6 +251,7 @@ Manages data processing pipelines with advanced transformation capabilities.
 - **Image Configuration**: Support for custom container images and tags
 - **Namespace Management**: Flexible namespace configuration
 - **RBAC Setup**: Automatic creation of required roles and permissions
+- **ConfigMap-Based Configuration**: Centralized configuration management for operator behavior
 
 ### 🔐 Security Features
 - **Webhook Security**:
@@ -263,6 +264,16 @@ Manages data processing pipelines with advanced transformation capabilities.
 - **RBAC Controls**:
   - Granular permission management
   - Cluster and namespace-scoped roles
+- **Container Security**:
+  - Runs as non-root user (UID 65534)
+  - Read-only root filesystem
+  - No privilege escalation allowed
+  - All capabilities dropped
+  - Seccomp profile enabled
+- **Pod Security**:
+  - Security context properly configured
+  - Resource limits enforced
+  - Temporary directory size limits
 
 ### 📊 Monitoring & Observability
 - **Status Reporting**:
@@ -273,6 +284,14 @@ Manages data processing pipelines with advanced transformation capabilities.
   - Quick status overview in kubectl output
   - Key field visibility (Stream, Enabled, Ready, Age)
 - **Generation Tracking**: Version tracking for resource updates
+- **Health Probes**:
+  - Liveness probe at `/healthz` endpoint
+  - Readiness probe at `/readyz` endpoint
+  - Startup probe for graceful initialization
+- **Metrics Endpoint**:
+  - Prometheus-compatible metrics at `/metrics` on port 8080
+  - Service annotations for automatic Prometheus discovery
+  - Operational metrics and controller performance data
 
 ## Advanced Capabilities
 
@@ -283,6 +302,11 @@ Manages data processing pipelines with advanced transformation capabilities.
 - **Resource Validation**: Pre-flight validation before applying changes
 
 ### 🎛️ Operational Features
+- **Production-Ready Deployment**:
+  - Default high availability setup with 2 replicas
+  - Automatic leader election for active-passive operation
+  - Zero-downtime rolling updates
+  - Priority class for critical infrastructure components
 - **Dry Run Support**: Preview changes before applying
 - **Uninstall Management**:
   - Complete cleanup with finalizer removal
@@ -291,6 +315,10 @@ Manages data processing pipelines with advanced transformation capabilities.
 - **Multi-Environment Support**:
   - Development, test, and production configurations
   - Environment-specific templates
+- **Resource Management**:
+  - Configurable resource requests and limits
+  - Default: 200m CPU / 256Mi memory (requests), 1 CPU / 1Gi memory (limits)
+  - Horizontal scaling capabilities
 
 ### 🔧 Developer Features
 - **Sample Templates**: Comprehensive examples for all resource types (alerts, alert templates, destinations, pipelines, functions)
@@ -326,13 +354,48 @@ Manages data processing pipelines with advanced transformation capabilities.
 
 ### High Availability
 - **Stateless Operation**: Operator maintains no local state
-- **Horizontal Scaling**: Support for multiple operator replicas
+- **Horizontal Scaling**: Default deployment with 2 replicas for high availability
 - **Leader Election**: Proper coordination for multiple instances
+- **PodDisruptionBudget**: Ensures minimum availability during cluster maintenance
+- **Anti-Affinity Rules**: Spreads replicas across different nodes for fault tolerance
+- **Topology Spread Constraints**: Even distribution across availability zones
 
 ### Performance
 - **Efficient Reconciliation**: Optimized reconciliation loops
 - **Batch Processing**: Bulk operations where applicable
 - **Resource Caching**: Minimizes API calls to OpenObserve
+- **Configurable Concurrency**: Tune controller concurrency for each resource type
+- **Rate Limiting**: Configurable API rate limits to prevent overwhelming OpenObserve
+- **Connection Pooling**: Efficient HTTP connection management with configurable pools
+
+### Performance Tuning Configuration
+
+The operator provides extensive performance tuning options via ConfigMap (`manifests/02-configmap.yaml`):
+
+#### Controller Concurrency Settings
+- **ALERT_CONTROLLER_CONCURRENCY**: Controls parallel alert processing (default: 1, recommended: 1-20)
+- **TEMPLATE_CONTROLLER_CONCURRENCY**: Controls alert template processing (default: 1, recommended: 1-10)
+- **DESTINATION_CONTROLLER_CONCURRENCY**: Controls destination processing (default: 1, recommended: 1-20)
+- **PIPELINE_CONTROLLER_CONCURRENCY**: Controls pipeline processing (default: 1, recommended: 1-10)
+- **FUNCTION_CONTROLLER_CONCURRENCY**: Controls function processing (default: 1, recommended: 1-5)
+- **CONFIG_CONTROLLER_CONCURRENCY**: Controls configuration processing (default: 1, recommended: 1-3)
+
+#### API Rate Limiting
+- **O2_RATE_LIMIT_RPS**: Requests per second to OpenObserve API (default: 10, max: 100)
+- **O2_RATE_LIMIT_BURST**: Burst capacity for API requests (default: 20, max: 200)
+
+#### HTTP Connection Pool Management
+- **O2_MAX_CONNS_PER_HOST**: Maximum concurrent connections per host (default: 10)
+- **O2_MAX_IDLE_CONNS**: Total maximum idle connections (default: 100)
+- **O2_MAX_IDLE_CONNS_PER_HOST**: Maximum idle connections per host (default: 10)
+- **O2_IDLE_CONN_TIMEOUT**: Idle connection timeout duration (default: 90s)
+- **O2_HTTP_TIMEOUT**: HTTP request timeout (default: 30s)
+
+#### Logging Configuration
+- **O2OPERATOR_LOG_LEVEL**: Operator log verbosity (options: debug, info, error; default: info)
+
+#### Optional Features
+- **SKIP_STREAM_VALIDATION**: Skip stream validation in webhooks when needed
 
 ### Maintenance
 - **Zero-Downtime Updates**: Rolling updates for operator upgrades

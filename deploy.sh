@@ -265,6 +265,7 @@ uninstall_operator() {
     echo -e "${YELLOW}Deleting operator resources...${NC}"
     kubectl delete -f manifests/04-webhook.yaml --ignore-not-found=true 2>/dev/null || true
     kubectl delete -f manifests/03-deployment.yaml --ignore-not-found=true 2>/dev/null || true
+    kubectl delete -f manifests/02-configmap.yaml --ignore-not-found=true 2>/dev/null || true
     kubectl delete -f manifests/02-rbac.yaml --ignore-not-found=true 2>/dev/null || true
 
     # Try to delete all custom resources (with timeout to prevent hanging)
@@ -374,6 +375,11 @@ deploy_operator() {
     echo -e "${YELLOW}Setting up RBAC...${NC}"
     kubectl apply ${DRY_RUN} -f manifests/02-rbac.yaml
     echo -e "${GREEN}✓ RBAC configured${NC}"
+
+    # Apply ConfigMap
+    echo -e "${YELLOW}Applying ConfigMap...${NC}"
+    kubectl apply ${DRY_RUN} -f manifests/02-configmap.yaml
+    echo -e "${GREEN}✓ ConfigMap applied${NC}"
 
     # Generate certificates if not skipped
     if [ "$SKIP_CERTS" != "true" ] && [ -z "$DRY_RUN" ]; then

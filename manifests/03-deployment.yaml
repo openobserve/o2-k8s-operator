@@ -53,14 +53,21 @@ spec:
       containers:
       - name: manager
         # Use specific version tag for production
-        image: public.ecr.aws/zinclabs/o2operator:latest
+        # image: public.ecr.aws/zinclabs/o2operator:latest
+        image: 058694856476.dkr.ecr.us-east-2.amazonaws.com/openobserve/o2operator-dev
         imagePullPolicy: Always  # More efficient for tagged versions
         command:
         - /manager
         args:
-        - --leader-elect
+        - --leader-elect=true
         - --metrics-bind-address=:8080
         - --health-probe-bind-address=:8081
+        - --webhook-port=9443
+        - --enable-webhooks=true
+        # Load environment variables from ConfigMap
+        envFrom:
+        - configMapRef:
+            name: openobserve-operator-config
         env:
         - name: WATCH_NAMESPACE
           value: ""  # Empty means watch all namespaces
@@ -74,8 +81,6 @@ spec:
               fieldPath: metadata.namespace
         - name: OPERATOR_NAME
           value: "openobserve-operator"
-        - name: O2OPERATOR_LOG_LEVEL
-          value: "info"  # Direct value instead of ConfigMap reference
         ports:
         - containerPort: 8080
           name: metrics

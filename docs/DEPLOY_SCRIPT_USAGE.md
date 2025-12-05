@@ -47,16 +47,51 @@ The `deploy.sh` script handles the complete lifecycle of operator management.
    - `01-o2destinations.crd.yaml` - OpenObserveDestination for alert and pipeline destinations
    - `01-o2pipelines.crd.yaml` - OpenObservePipeline for data pipeline configurations
    - `01-o2functions.crd.yaml` - OpenObserveFunction for VRL transformation functions
-3. **02-rbac.yaml** - Sets up RBAC:
+3. **02-configmap.yaml** - ConfigMap for operator configuration:
+   - Controller concurrency settings for each resource type
+   - API rate limiting configuration (RPS and burst)
+   - HTTP connection pool settings
+   - Logging level configuration
+   - Optional stream validation settings
+4. **02-rbac.yaml** - Sets up RBAC:
    - ServiceAccount for the operator
    - ClusterRole with required permissions
    - ClusterRoleBinding
    - Leader election Role and RoleBinding
-4. **03-deployment.yaml** - Contains:
-   - Operator Deployment
+5. **03-deployment.yaml** - Contains:
+   - Operator Deployment (with HA configuration, 2 replicas)
+   - PodDisruptionBudget for high availability
    - Metrics Service (port 8080)
    - Webhook Service (port 443)
-5. **04-webhook.yaml** - ValidatingWebhookConfiguration for resource validation
+6. **04-webhook.yaml** - ValidatingWebhookConfiguration for resource validation
+
+## Operator Configuration
+
+The operator behavior can be tuned via the ConfigMap in `manifests/02-configmap.yaml`:
+
+### Performance Tuning Options
+
+- **Controller Concurrency**: Control parallel processing for each resource type
+  - `ALERT_CONTROLLER_CONCURRENCY`: Default 1, recommended 1-20
+  - `TEMPLATE_CONTROLLER_CONCURRENCY`: Default 1, recommended 1-10
+  - `DESTINATION_CONTROLLER_CONCURRENCY`: Default 1, recommended 1-20
+  - `PIPELINE_CONTROLLER_CONCURRENCY`: Default 1, recommended 1-10
+  - `FUNCTION_CONTROLLER_CONCURRENCY`: Default 1, recommended 1-5
+  - `CONFIG_CONTROLLER_CONCURRENCY`: Default 1, recommended 1-3
+
+- **API Rate Limiting**: Control API request rates to OpenObserve
+  - `O2_RATE_LIMIT_RPS`: Requests per second (default: 10, max: 100)
+  - `O2_RATE_LIMIT_BURST`: Burst capacity (default: 20, max: 200)
+
+- **HTTP Connection Pool**: Manage HTTP connections
+  - `O2_MAX_CONNS_PER_HOST`: Max concurrent connections (default: 10)
+  - `O2_MAX_IDLE_CONNS`: Total idle connections (default: 100)
+  - `O2_MAX_IDLE_CONNS_PER_HOST`: Idle connections per host (default: 10)
+  - `O2_IDLE_CONN_TIMEOUT`: Idle connection timeout (default: 90s)
+  - `O2_HTTP_TIMEOUT`: HTTP request timeout (default: 30s)
+
+- **Logging**: Control operator log verbosity
+  - `O2OPERATOR_LOG_LEVEL`: Log level (debug, info, error)
 
 ## Environment Configuration
 

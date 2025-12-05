@@ -23,12 +23,25 @@ kubectl apply -f manifests/01-o2functions.crd.yaml
 kubectl apply -f manifests/02-rbac.yaml
 ```
 
-### Step 4: Deploy the Operator
+### Step 4: Apply ConfigMap for Operator Configuration
+```bash
+kubectl apply -f manifests/02-configmap.yaml
+```
+
+This ConfigMap contains configuration for:
+- Controller concurrency settings
+- API rate limiting
+- HTTP connection pool settings
+- Logging level
+
+**Note:** You can edit the ConfigMap values before applying to tune the operator performance based on your requirements. After modifying, restart the operator deployment for changes to take effect.
+
+### Step 5: Deploy the Operator
 ```bash
 kubectl apply -f manifests/03-deployment.yaml
 ```
 
-### Step 5: Configure Webhook (Optional)
+### Step 6: Configure Webhook (Optional)
 
 **Note:** The deploy.sh script handles certificate generation automatically and updates the caBundle in the webhook configuration file. For manual setup:
 
@@ -49,7 +62,7 @@ CA_BUNDLE=$(cat /tmp/tls.crt | base64 | tr -d '\n')
 kubectl apply -f manifests/04-webhook.yaml
 ```
 
-### Step 6: Verify Installation
+### Step 7: Verify Installation
 ```bash
 # Check if operator pod is running
 kubectl get pods -n o2operator
@@ -75,10 +88,13 @@ kubectl delete -f manifests/04-webhook.yaml
 # 3. Delete operator deployment
 kubectl delete -f manifests/03-deployment.yaml
 
-# 4. Delete RBAC resources
+# 4. Delete ConfigMap
+kubectl delete -f manifests/02-configmap.yaml
+
+# 5. Delete RBAC resources
 kubectl delete -f manifests/02-rbac.yaml
 
-# 5. Delete CRDs
+# 6. Delete CRDs
 kubectl delete -f manifests/01-o2configs.crd.yaml
 kubectl delete -f manifests/01-o2alerts.crd.yaml
 kubectl delete -f manifests/01-o2alerttemplates.crd.yaml
@@ -86,6 +102,6 @@ kubectl delete -f manifests/01-o2destinations.crd.yaml
 kubectl delete -f manifests/01-o2pipelines.crd.yaml
 kubectl delete -f manifests/01-o2functions.crd.yaml
 
-# 6. Delete namespace (this will also delete the webhook secret)
+# 7. Delete namespace (this will also delete the webhook secret)
 kubectl delete -f manifests/00-namespace.yaml
 ```
