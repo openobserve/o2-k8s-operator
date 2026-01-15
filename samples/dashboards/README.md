@@ -4,47 +4,60 @@ This directory contains sample dashboard configurations for the OpenObserve Oper
 
 ## Available Samples
 
-### 1. minimal-dashboard.yaml
-A minimal dashboard with basic structure and one panel.
+### 1. dashboard1.yaml
+Dashboard demonstrating tab structure.
 
 **Features:**
-- Simple area chart panel
-- Basic configuration
-- Good starting point for creating custom dashboards
+- 3 tabs with empty panels
+- Minimal configuration for tab layout
+- Good starting point for multi-tab dashboards
 
 **Usage:**
 ```bash
-kubectl apply -f minimal-dashboard.yaml
+kubectl apply -f dashboard1.yaml
 ```
 
-### 2. simple-dashboard.yaml
-A simple monitoring dashboard with a single panel showing metrics over time.
+### 2. dashboard2.yaml
+Dashboard with tabs containing single panels.
 
 **Features:**
-- Area chart visualization
-- SQL query example
-- Complete panel configuration
+- 3 tabs, each with one area chart panel
+- Demonstrates basic panel configuration in tabs
+- SQL query examples
 
 **Usage:**
 ```bash
-kubectl apply -f simple-dashboard.yaml
+kubectl apply -f dashboard2.yaml
 ```
 
-### 3. complete-dashboard.yaml
-A comprehensive dashboard template with multiple panel types.
+### 3. dashboard3.yaml
+Dashboard with tabs containing multiple panels.
 
 **Features:**
-- Multiple visualization types (area, line, bar, table, etc.)
-- Multiple tabs
+- 3 tabs, each with 2 panels (area and bar charts)
+- Demonstrates panel layout within tabs
+- Multiple visualization types
+
+**Usage:**
+```bash
+kubectl apply -f dashboard3.yaml
+```
+
+### 4. dashboard4.yaml
+Comprehensive dashboard with all chart types.
+
+**Features:**
+- 4 tabs with extensive panel examples
+- All supported panel types: area, area-stacked, bar, h-bar, line, scatter, stacked, h-stacked, geomap, maps, pie, donut, heatmap, table, metric, gauge, html, markdown, sankey, custom_chart
 - Complex query examples
 - Good reference for advanced dashboards
 
 **Usage:**
 ```bash
-kubectl apply -f complete-dashboard.yaml
+kubectl apply -f dashboard4.yaml
 ```
 
-### 4. dashboardWithVariables.yaml
+### 5. dashboardWithVariables.yaml
 Dashboard demonstrating variable usage.
 
 **Features:**

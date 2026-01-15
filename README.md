@@ -1,4 +1,4 @@
-# OpenObserve Kubernetes Operator (v1.0.6)
+# OpenObserve Kubernetes Operator (v1.1.0)
 
 A Kubernetes operator that enables declarative management of resources of OpenObserve Enterprise (alerts, pipelines, functions) as native Kubernetes Custom Resources.
 

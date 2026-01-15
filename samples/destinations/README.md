@@ -36,13 +36,15 @@ Each pipeline destination type has specific output format requirements:
 ### Alert Destinations
 - `http-alert-destination.yaml` - HTTP webhook for alerts
 - `email-alert-destination.yaml` - Email notifications for alerts
-- `sns-alert-destination.yaml` - AWS SNS notifications for alerts
 
 ### Pipeline Destinations
-- `pipeline-splunk-destination.yaml` - Send data to Splunk HEC
-- `pipeline-elasticsearch-destination.yaml` - Send data to Elasticsearch
-- `pipeline-datadog-destination.yaml` - Send data to Datadog
 - `pipeline-custom-destination.yaml` - Send data to custom endpoints
+- `pipeline-datadog-destination.yaml` - Send data to Datadog
+- `pipeline-dynatrace-destination.yaml` - Send data to Dynatrace
+- `pipeline-elasticsearch-destination.yaml` - Send data to Elasticsearch
+- `pipeline-newrelic-destination.yaml` - Send data to New Relic
+- `pipeline-openobserve-desntination.yaml` - Send data to another OpenObserve instance
+- `pipeline-splunk-destination.yaml` - Send data to Splunk HEC
 
 ## Validation Rules
 

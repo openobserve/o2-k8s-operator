@@ -33,8 +33,8 @@ Before using these samples:
 
 | File | Type | Description | Use Case |
 |------|------|-------------|-----------|
-| `alerttemplate.template.yaml` | Template | Complete template with all available options | Reference template showing all configuration possibilities |
-| `email-alert-template.yaml` | Email | Rich HTML email notification template | Send formatted email alerts with tables and styling |
+| `email-html-alert-template.yaml` | Email | Rich HTML email notification template | Send formatted email alerts with tables and styling |
+| `email-text-alert-template.yaml` | Email | Plain text email notification template | Send simple text-based email alerts |
 | `http-alert-template.yaml` | HTTP | Generic HTTP webhook template | Standard JSON payload for custom webhooks |
 | `http-pagerduty-webhook-template.yaml` | HTTP | PagerDuty incident creation template | Create PagerDuty incidents with proper formatting |
 | `http-slack-webhook-template.yaml` | HTTP | Slack notification template | Send rich Slack messages with attachments and fields |

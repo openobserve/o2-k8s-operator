@@ -49,7 +49,6 @@ Before using these samples:
 | `function-test-failure-example.yaml` | Example showing test failure scenarios | Intermediate | Error handling, test validation |
 | `function-with-json-events.yaml` | JSON parsing and complex transformations | Advanced | JSON handling, nested data |
 | `advanced-k8s-function.yaml` | Kubernetes log processing with enrichment | Advanced | K8s metadata, pattern matching, cleanup |
-| `functions.template` | Complete reference template | Reference | All configuration options documented |
 
 ## Function Structure
 
