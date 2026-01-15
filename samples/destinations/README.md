@@ -8,7 +8,7 @@ This directory contains sample configurations for OpenObserve destinations, whic
 Alert destinations are used to send alerts to various endpoints. They:
 - **Require** a template reference
 - Do NOT have a `destinationTypeName` field (or it's empty)
-- Support types: `http`, `email`, `sns`
+- Support types: `http`, `email`
 
 ### Pipeline Destinations
 Pipeline destinations are used to send pipeline data to external systems. They:
