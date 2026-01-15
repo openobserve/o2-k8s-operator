@@ -15,11 +15,12 @@ This directory contains all the Kubernetes manifests required to deploy the Open
 
 ## 📋 CRD Files
 
-The operator manages 6 custom resource types:
+The operator manages 7 custom resource types:
 
 - **`01-o2alerts.crd.yaml`**: Alert definitions for monitoring
 - **`01-o2alerttemplates.crd.yaml`**: Reusable alert templates
 - **`01-o2configs.crd.yaml`**: OpenObserve connection configurations
+- **`01-o2dashboards.crd.yaml`**: Dashboard definitions with panels and visualizations
 - **`01-o2destinations.crd.yaml`**: Notification destinations (Slack, email, PagerDuty)
 - **`01-o2functions.crd.yaml`**: Data transformation functions
 - **`01-o2pipelines.crd.yaml`**: Data pipeline definitions
@@ -36,6 +37,7 @@ kubectl apply -f 00-namespace.yaml
 kubectl apply -f 01-o2alerts.crd.yaml
 kubectl apply -f 01-o2alerttemplates.crd.yaml
 kubectl apply -f 01-o2configs.crd.yaml
+kubectl apply -f 01-o2dashboards.crd.yaml
 kubectl apply -f 01-o2destinations.crd.yaml
 kubectl apply -f 01-o2functions.crd.yaml
 kubectl apply -f 01-o2pipelines.crd.yaml
@@ -98,6 +100,7 @@ The ConfigMap controls operator behavior:
 | `PIPELINE_CONTROLLER_CONCURRENCY` | Pipeline controller worker threads | 5 |
 | `FUNCTION_CONTROLLER_CONCURRENCY` | Function controller worker threads | 3 |
 | `CONFIG_CONTROLLER_CONCURRENCY` | Config controller worker threads | 2 |
+| `DASHBOARD_CONTROLLER_CONCURRENCY` | Dashboard controller worker threads | 1 |
 | `O2_HTTP_TIMEOUT` | HTTP client timeout | 30s |
 | `O2_HTTP_RETRY_MAX` | Maximum retry attempts | 3 |
 | `O2_HTTP_RETRY_WAIT` | Initial retry wait time | 1s |

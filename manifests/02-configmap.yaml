@@ -12,6 +12,7 @@ data:
   PIPELINE_CONTROLLER_CONCURRENCY: "1"     # Default: 1, Recommended: 1-10
   FUNCTION_CONTROLLER_CONCURRENCY: "1"     # Default: 1, Recommended: 1-5
   CONFIG_CONTROLLER_CONCURRENCY: "1"       # Default: 1, Recommended: 1-3
+  DASHBOARD_CONTROLLER_CONCURRENCY: "1"    # Default: 1, Recommended: 1-10
 
   # API Rate Limiting
   # Controls how fast we make requests to OpenObserve API

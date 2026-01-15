@@ -1,0 +1,354 @@
+# ============================================================================
+#          OpenObserve Dashboard - Complete Example with Multiple Panels
+#          Creates a comprehensive dashboard with various panel types
+# ============================================================================
+#
+# IMPORTANT NOTES:
+# - Dashboard title must be unique within the organization and folder
+# - If a dashboard with the same title exists, creation will fail
+# - Before updating, the dashboard must exist in the specified org/folder
+# - The operator will check for existing dashboards before creating
+# - Org and folder default to "default" if not specified
+#
+# ============================================================================
+
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObserveDashboard
+metadata:
+  name: k8s-monitoring-dashboard   # Kubernetes resource name
+  namespace: o2operator              # Target namespace
+spec:
+  configRef:
+    name: openobserve-main           # OpenObserveConfig reference (Required)
+    namespace: o2operator
+
+  # Dashboard identification
+  title: "K8s Cluster Monitoring"   # Must be unique within org/folder (Required)
+  description: "Comprehensive Kubernetes cluster monitoring dashboard with multiple visualization types"
+
+  # Organization and folder configuration
+  org: "default"                     # Organization (defaults to "default")
+  folderName: "production"           # Folder name (defaults to "default", auto-created if missing)
+
+  # Complete dashboard definition
+  dashboard:
+    version: 8
+
+    # Dashboard variables (optional)
+    variables:
+      list: []
+      showDynamicFilters: true
+
+    # Default time range
+    defaultDatetimeDuration:
+      type: "relative"
+      relativeTimePeriod: "15m"
+
+    # Dashboard tabs with panels
+    tabs:
+      # ======================================
+      # Tab 1: Overview
+      # ======================================
+      - tabId: "overview"
+        name: "Overview"
+        panels:
+          # Panel 1: Area Chart
+          - id: "Panel_Area_001"
+            type: "area"
+            title: "K8s Event Count Over Time"
+            description: "Kubernetes events grouped by cluster"
+            config:
+              show_legends: true
+              decimals: 2
+              line_thickness: 1.5
+              show_gridlines: true
+              line_interpolation: "smooth"
+              show_symbol: false
+            queryType: "sql"
+            queries:
+              - query: |
+                  SELECT
+                    histogram(_timestamp) as x_axis,
+                    count(k8s_namespace_name) as y_axis,
+                    k8s_cluster as breakdown
+                  FROM "k8s_events"
+                  GROUP BY x_axis, breakdown
+                  ORDER BY x_axis ASC
+                customQuery: false
+            layout:
+              x: 0
+              y: 0
+              w: 12
+              h: 6
+              i: 1
+
+          # Panel 2: Line Chart
+          - id: "Panel_Line_002"
+            type: "line"
+            title: "Pod Restarts"
+            description: "Pod restart count by namespace"
+            config:
+              show_legends: true
+              decimals: 0
+              line_thickness: 2
+              show_gridlines: true
+            queryType: "sql"
+            queries:
+              - query: |
+                  SELECT
+                    histogram(_timestamp) as x_axis,
+                    count(*) as y_axis,
+                    k8s_namespace_name as breakdown
+                  FROM "k8s_events"
+                  WHERE reason = 'Started'
+                  GROUP BY x_axis, breakdown
+                  ORDER BY x_axis ASC
+                customQuery: false
+            layout:
+              x: 12
+              y: 0
+              w: 12
+              h: 6
+              i: 2
+
+          # Panel 3: Bar Chart
+          - id: "Panel_Bar_003"
+            type: "bar"
+            title: "Events by Namespace"
+            description: "Distribution of events across namespaces"
+            config:
+              show_legends: true
+              decimals: 0
+              axis_border_show: true
+            queryType: "sql"
+            queries:
+              - query: |
+                  SELECT
+                    k8s_namespace_name as x_axis,
+                    count(*) as y_axis
+                  FROM "k8s_events"
+                  GROUP BY x_axis
+                  ORDER BY y_axis DESC
+                  LIMIT 20
+                customQuery: false
+            layout:
+              x: 0
+              y: 6
+              w: 12
+              h: 6
+              i: 3
+
+          # Panel 4: Table
+          - id: "Panel_Table_004"
+            type: "table"
+            title: "Recent Events"
+            description: "Latest Kubernetes events"
+            config:
+              wrap_table_cells: false
+              table_transpose: false
+              visible_columns: []
+              hidden_columns: []
+            queryType: "sql"
+            queries:
+              - query: |
+                  SELECT
+                    _timestamp,
+                    k8s_namespace_name,
+                    k8s_pod_name,
+                    reason,
+                    message
+                  FROM "k8s_events"
+                  ORDER BY _timestamp DESC
+                  LIMIT 100
+                customQuery: false
+            layout:
+              x: 12
+              y: 6
+              w: 12
+              h: 6
+              i: 4
+
+      # ======================================
+      # Tab 2: Detailed Metrics
+      # ======================================
+      - tabId: "metrics"
+        name: "Detailed Metrics"
+        panels:
+          # Panel 5: Metric (Single Value)
+          - id: "Panel_Metric_005"
+            type: "metric"
+            title: "Total Events Today"
+            description: "Count of all events in the last 24 hours"
+            config:
+              decimals: 0
+            queryType: "sql"
+            queries:
+              - query: |
+                  SELECT count(*) as value
+                  FROM "k8s_events"
+                  WHERE _timestamp >= now() - INTERVAL '24 hours'
+                customQuery: false
+            layout:
+              x: 0
+              y: 0
+              w: 6
+              h: 4
+              i: 1
+
+          # Panel 6: Gauge
+          - id: "Panel_Gauge_006"
+            type: "gauge"
+            title: "Event Rate (last hour)"
+            description: "Events per minute in the last hour"
+            config:
+              min: 0
+              max: 100
+              decimals: 1
+            queryType: "sql"
+            queries:
+              - query: |
+                  SELECT count(*) / 60 as value
+                  FROM "k8s_events"
+                  WHERE _timestamp >= now() - INTERVAL '1 hour'
+                customQuery: false
+            layout:
+              x: 6
+              y: 0
+              w: 6
+              h: 4
+              i: 2
+
+          # Panel 7: Pie Chart
+          - id: "Panel_Pie_007"
+            type: "pie"
+            title: "Events by Type"
+            description: "Distribution of event types"
+            config:
+              show_legends: true
+              decimals: 0
+            queryType: "sql"
+            queries:
+              - query: |
+                  SELECT
+                    type as x_axis,
+                    count(*) as y_axis
+                  FROM "k8s_events"
+                  GROUP BY x_axis
+                customQuery: false
+            layout:
+              x: 12
+              y: 0
+              w: 6
+              h: 8
+              i: 3
+
+          # Panel 8: Donut Chart
+          - id: "Panel_Donut_008"
+            type: "donut"
+            title: "Events by Severity"
+            description: "Severity level distribution"
+            config:
+              show_legends: true
+              decimals: 0
+            queryType: "sql"
+            queries:
+              - query: |
+                  SELECT
+                    severity as x_axis,
+                    count(*) as y_axis
+                  FROM "k8s_events"
+                  GROUP BY x_axis
+                customQuery: false
+            layout:
+              x: 18
+              y: 0
+              w: 6
+              h: 8
+              i: 4
+
+          # Panel 9: Heatmap
+          - id: "Panel_Heatmap_009"
+            type: "heatmap"
+            title: "Event Density Heatmap"
+            description: "Event density across time and namespaces"
+            config:
+              show_legends: true
+              decimals: 0
+            queryType: "sql"
+            queries:
+              - query: |
+                  SELECT
+                    k8s_namespace_name as x_axis,
+                    _timestamp as y_axis,
+                    count(*) as z_axis
+                  FROM "k8s_events"
+                  GROUP BY x_axis, y_axis
+                customQuery: false
+            layout:
+              x: 0
+              y: 4
+              w: 12
+              h: 8
+              i: 5
+
+# ============================================================================
+# VALIDATION NOTES:
+# ============================================================================
+#
+# 1. Before Creating:
+#    - Operator checks if dashboard with same title exists in org/folder
+#    - If exists: returns error with message indicating conflict
+#    - If not exists: creates the dashboard
+#
+# 2. Before Updating:
+#    - Operator checks if dashboard exists with the dashboardID
+#    - If not exists: returns error indicating dashboard not found
+#    - If exists: updates with optimistic locking using hash
+#
+# 3. Folder Management:
+#    - If folderName specified but doesn't exist, it's auto-created
+#    - If folderName not specified, defaults to "default"
+#    - Folder type for dashboards is "dashboards"
+#
+# 4. Organization:
+#    - Defaults to "default" if not specified
+#    - Can be overridden at dashboard level
+#
+# ============================================================================
+# FIELD REFERENCE:
+# ============================================================================
+#
+# Dashboard Structure:
+# - version: Dashboard schema version (usually 8)
+# - tabs: Array of tab objects containing panels
+#   - tabId: Unique identifier for the tab
+#   - name: Display name of the tab
+#   - panels: Array of panel objects
+#
+# Panel Types Available:
+# - area, area-stacked: Area charts
+# - line: Line charts
+# - bar, h-bar: Bar charts (vertical and horizontal)
+# - stacked, h-stacked: Stacked charts
+# - pie, donut: Pie and donut charts
+# - metric: Single value metric
+# - gauge: Gauge visualization
+# - table: Data table
+# - heatmap: Heatmap visualization
+# - geomap, maps: Geographic visualizations
+# - sankey: Sankey diagrams
+# - scatter: Scatter plots
+# - html, markdown: Text panels
+# - custom_chart: Custom ECharts visualizations
+#
+# Panel Configuration:
+# - id: Unique panel identifier
+# - type: Panel type (see above)
+# - title: Panel title
+# - description: Panel description
+# - config: Panel-specific configuration
+# - queryType: "sql", "promql", or custom
+# - queries: Array of query objects
+# - layout: Position and size (x, y, w, h, i)
+#
+# ============================================================================

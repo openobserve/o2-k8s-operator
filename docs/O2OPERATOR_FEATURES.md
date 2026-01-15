@@ -244,6 +244,76 @@ Manages data processing pipelines with advanced transformation capabilities.
 - **Delay Configuration**: Configurable processing delays
 - **Timezone Support**: Per-pipeline timezone configuration
 
+### 7. OpenObserveDashboard (o2dash, o2dashboard)
+
+Manages dashboard definitions with comprehensive visualization and interactivity.
+
+**Key Features:**
+
+#### Dashboard Management
+- **Declarative Dashboards**: Define complete dashboards as Kubernetes resources
+- **Multi-Tab Support**: Create dashboards with multiple tabs for organization
+- **Flexible Layout**: Full control over panel positioning and sizing (x, y, w, h)
+- **Folder Organization**: Organize dashboards in folders with automatic folder creation
+- **Title-Based Uniqueness**: Enforces unique titles within org/folder combinations
+- **Smart Adoption**: Adopts existing dashboards instead of creating duplicates
+- **Duplicate Cleanup**: Automatically deletes all duplicate dashboards on resource deletion
+
+#### Visualization Capabilities
+- **Chart Types**:
+  - Area charts (area, area-stacked)
+  - Line charts (line)
+  - Bar charts (bar, h-bar, stacked, h-stacked)
+  - Pie/Donut charts (pie, donut)
+  - Metrics (metric, gauge)
+  - Data tables (table)
+  - Heatmaps (heatmap)
+  - Geographic visualizations (geomap, maps)
+  - Flow diagrams (sankey)
+  - Scatter plots (scatter)
+  - Content panels (html, markdown)
+  - Custom visualizations (custom_chart with ECharts)
+
+#### Query & Data Features
+- **Query Types**: SQL and PromQL query support in panels
+- **Field Mapping**: Complete field configuration for x, y, z axes
+- **Breakdown Support**: Group data by multiple dimensions
+- **Filtering**: Advanced filter conditions with logical operators
+- **Aggregations**: Support for count, sum, avg, min, max functions
+- **Custom Queries**: Support for complex custom SQL queries
+- **Multi-Stream**: Join support for querying multiple streams
+
+#### Variables & Interactivity
+- **Variable Types**:
+  - `query_values` - Dynamic values populated from query results
+  - `constant` - Static constant values
+  - `textbox` - Free text input
+  - `custom` - Dropdown with predefined options
+- **Multi-Select**: Single and multi-select variable support
+- **Dynamic Filters**: Toggle visibility of dynamic filters
+- **Variable Options**: Custom labels, default values, and selection behavior
+
+#### Dashboard Configuration
+- **Time Range**: Default time range configuration (relative or absolute)
+- **Version Support**: Dashboard schema version management (v8)
+- **Metadata**: Dashboard owner, role, and creation tracking
+- **Status Tracking**:
+  - Dashboard ID tracking
+  - Folder ID tracking
+  - Last sync time
+  - Ready conditions
+
+**Configuration Options:**
+- `title`: Dashboard title (unique within org/folder, required)
+- `description`: Dashboard description (optional)
+- `org`: Organization name (defaults to "default")
+- `folderName`: Folder name (defaults to "default", auto-created if needed)
+- `dashboard`: Complete dashboard JSON structure including:
+  - `version`: Dashboard schema version
+  - `tabs`: Array of tab objects with panels
+  - `variables`: Dashboard variables configuration
+  - `defaultDatetimeDuration`: Default time range settings
+
 ## Deployment & Operations Features
 
 ### 🚀 Automated Deployment

@@ -1,0 +1,102 @@
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObserveDashboard
+metadata:
+  name: simple-dashboard
+  namespace: o2operator
+spec:
+  configRef:
+    name: openobserve-main
+    namespace: o2operator
+  title: "Simple Monitoring Dashboard"
+  description: "Basic monitoring dashboard with essential metrics"
+  org: "default"
+  folderName: "TestFolder"
+  dashboard:
+    version: 8
+    tabs:
+      - tabId: "default"
+        name: "Overview"
+        panels:
+          - id: "Panel_Metrics_001"
+            type: "area"
+            title: "System Metrics"
+            description: "System performance metrics over time"
+            config:
+              show_legends: true
+              decimals: 2
+              line_thickness: 1.5
+              show_gridlines: true
+              line_interpolation: "smooth"
+              show_symbol: false
+              connect_nulls: false
+              aggregation: "last"
+            queryType: "sql"
+            queries:
+              - query: "SELECT histogram(_timestamp) as \"x_axis_1\", count(*) as \"y_axis_1\" FROM \"default\" GROUP BY x_axis_1 ORDER BY x_axis_1 ASC"
+                vrlFunctionQuery: ""
+                customQuery: false
+                fields:
+                  stream: "default"
+                  stream_type: "logs"
+                  "x":
+                    - label: "Timestamp"
+                      alias: "x_axis_1"
+                      type: "build"
+                      color: null
+                      functionName: "histogram"
+                      sortBy: "ASC"
+                      args:
+                        - type: "field"
+                          value:
+                            field: "_timestamp"
+                            streamAlias: null
+                        - type: "histogramInterval"
+                      isDerived: false
+                      havingConditions: []
+                      treatAsNonTimestamp: true
+                      showFieldAsJson: false
+                  "y":
+                    - label: "Count"
+                      alias: "y_axis_1"
+                      type: "build"
+                      color: "#5960b2"
+                      functionName: "count"
+                      args:
+                        - type: "field"
+                          value:
+                            field: "*"
+                            streamAlias: null
+                      isDerived: false
+                      havingConditions: []
+                      treatAsNonTimestamp: true
+                      showFieldAsJson: false
+                  "z": []
+                  breakdown: []
+                  filter:
+                    filterType: "group"
+                    logicalOperator: "AND"
+                    conditions: []
+                config:
+                  promql_legend: ""
+                  layer_type: "scatter"
+                  weight_fixed: 1
+                  limit: 0
+                  min: 0
+                  max: 100
+                  time_shift: []
+                joins: []
+            layout:
+              x: 0
+              y: 0
+              w: 96
+              h: 18
+              i: 1
+            htmlContent: ""
+            markdownContent: ""
+            customChartContent: ""
+    variables:
+      list: []
+      showDynamicFilters: true
+    defaultDatetimeDuration:
+      type: "relative"
+      relativeTimePeriod: "15m"

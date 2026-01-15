@@ -23,6 +23,7 @@ The OpenObserve operator manages the following Custom Resource Definitions (CRDs
 | `o2function` | `openobservefunction` | VRL/JavaScript functions |
 | `o2alerttemplate` | `openobservealerttemplate` | Alert notification templates |
 | `o2dest` | `openobservedestination` | Alert and pipeline destinations |
+| `o2dash` | `openobservedashboard` | Dashboard definitions with panels and visualizations |
 
 ## Listing Resources
 
@@ -41,7 +42,7 @@ kubectl get openobservealerts -A
 kubectl get openobservealerts --all-namespaces
 
 # List multiple resource types at once
-kubectl get o2alerts,o2pipelines,o2functions -n o2operator
+kubectl get o2alerts,o2pipelines,o2functions,o2dashboards -n o2operator
 
 # List with more details
 kubectl get openobservealerts -o wide
@@ -349,7 +350,7 @@ kubectl top pods -n o2operator -l app=openobserve-operator
 ### Export resources for support
 ```bash
 # Export all OpenObserve resources
-for crd in alerts pipelines functions alerttemplates destinations configs; do
+for crd in alerts pipelines functions alerttemplates destinations configs dashboards; do
   kubectl get openobserve${crd} -A -o yaml > openobserve-${crd}-export.yaml
 done
 

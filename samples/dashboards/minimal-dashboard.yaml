@@ -1,0 +1,1733 @@
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObserveDashboard
+metadata:
+  name: minimal-dashboard
+  namespace: o2operator
+spec:
+  configRef:
+    name: openobserve-main
+    namespace: o2operator
+  title: "Minimal Dashboard"
+  description: "A minimal dashboard example with no panels"
+  org: "default"
+  folderName: "TestFolder1"
+  dashboard:
+    version: 8
+    tabs:
+      - tabId: "tab-001"
+        name: "Tab1"
+        panels:
+        - id: panel_001
+          type: area
+          title: Panel1
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT histogram(_timestamp) as "x_axis_1", count(k8s_namespace_name)
+              as "y_axis_1", k8s_cluster as "breakdown_1" FROM "k8s_events"  GROUP BY x_axis_1,
+              breakdown_1 ORDER BY x_axis_1 ASC
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: k8s_events
+              stream_type: logs
+              "x":
+              - label: Timestamp
+                alias: x_axis_1
+                type: build
+                color: null
+                functionName: histogram
+                sortBy: ASC
+                args:
+                - type: field
+                  value:
+                    field: _timestamp
+                    streamAlias: null
+                - type: histogramInterval
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "y":
+              - label: K8s Namespace Name
+                alias: y_axis_1
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: k8s_namespace_name
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "z": []
+              breakdown:
+              - label: K8s Cluster
+                alias: breakdown_1
+                type: build
+                color: null
+                args:
+                - type: field
+                  value:
+                    field: k8s_cluster
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 0
+            "y": 0
+            "w": 96
+            "h": 18
+            "i": 1
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+        - id: panel_002
+          type: area-stacked
+          title: Panel2
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT histogram(_timestamp) as "x_axis_1", count(k8s_namespace_name)
+              as "y_axis_1", k8s_cluster as "breakdown_1" FROM "k8s_events"  GROUP BY x_axis_1,
+              breakdown_1 ORDER BY x_axis_1 ASC
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: k8s_events
+              stream_type: logs
+              "x":
+              - label: Timestamp
+                alias: x_axis_1
+                type: build
+                color: null
+                functionName: histogram
+                sortBy: ASC
+                args:
+                - type: field
+                  value:
+                    field: _timestamp
+                    streamAlias: null
+                - type: histogramInterval
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "y":
+              - label: K8s Namespace Name
+                alias: y_axis_1
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: k8s_namespace_name
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "z": []
+              breakdown:
+              - label: K8s Cluster
+                alias: breakdown_1
+                type: build
+                color: null
+                args:
+                - type: field
+                  value:
+                    field: k8s_cluster
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 96
+            "y": 0
+            "w": 96
+            "h": 18
+            "i": 2
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+        - id: panel_003
+          type: bar
+          title: Panel3
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT histogram(_timestamp) as "x_axis_1", count(k8s_namespace_name)
+              as "y_axis_1", k8s_cluster as "breakdown_1" FROM "k8s_events"  GROUP BY x_axis_1,
+              breakdown_1 ORDER BY x_axis_1 ASC
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: k8s_events
+              stream_type: logs
+              "x":
+              - label: Timestamp
+                alias: x_axis_1
+                type: build
+                color: null
+                functionName: histogram
+                sortBy: ASC
+                args:
+                - type: field
+                  value:
+                    field: _timestamp
+                    streamAlias: null
+                - type: histogramInterval
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "y":
+              - label: K8s Namespace Name
+                alias: y_axis_1
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: k8s_namespace_name
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "z": []
+              breakdown:
+              - label: K8s Cluster
+                alias: breakdown_1
+                type: build
+                color: null
+                args:
+                - type: field
+                  value:
+                    field: k8s_cluster
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 0
+            "y": 20
+            "w": 96
+            "h": 18
+            "i": 3
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+        - id: panel_004
+          type: h-bar
+          title: Panel4
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT histogram(_timestamp) as "x_axis_1", count(k8s_namespace_name)
+              as "y_axis_1", k8s_cluster as "breakdown_1" FROM "k8s_events"  GROUP BY x_axis_1,
+              breakdown_1 ORDER BY x_axis_1 ASC
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: k8s_events
+              stream_type: logs
+              "x":
+              - label: Timestamp
+                alias: x_axis_1
+                type: build
+                color: null
+                functionName: histogram
+                sortBy: ASC
+                args:
+                - type: field
+                  value:
+                    field: _timestamp
+                    streamAlias: null
+                - type: histogramInterval
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "y":
+              - label: K8s Namespace Name
+                alias: y_axis_1
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: k8s_namespace_name
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "z": []
+              breakdown:
+              - label: K8s Cluster
+                alias: breakdown_1
+                type: build
+                color: null
+                args:
+                - type: field
+                  value:
+                    field: k8s_cluster
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 96
+            "y": 20
+            "w": 96
+            "h": 18
+            "i": 4
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+        - id: panel_005
+          type: line
+          title: Panel5
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT histogram(_timestamp) as "x_axis_1", count(k8s_namespace_name)
+              as "y_axis_1", k8s_cluster as "breakdown_1" FROM "k8s_events"  GROUP BY x_axis_1,
+              breakdown_1 ORDER BY x_axis_1 ASC
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: k8s_events
+              stream_type: logs
+              "x":
+              - label: Timestamp
+                alias: x_axis_1
+                type: build
+                color: null
+                functionName: histogram
+                sortBy: ASC
+                args:
+                - type: field
+                  value:
+                    field: _timestamp
+                    streamAlias: null
+                - type: histogramInterval
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "y":
+              - label: K8s Namespace Name
+                alias: y_axis_1
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: k8s_namespace_name
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "z": []
+              breakdown:
+              - label: K8s Cluster
+                alias: breakdown_1
+                type: build
+                color: null
+                args:
+                - type: field
+                  value:
+                    field: k8s_cluster
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+          layout:
+            "x": 0
+            "y": 40
+            "w": 96
+            "h": 18
+            "i": 5
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+        - id: panel_006
+          type: scatter
+          title: Panel6
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT histogram(_timestamp) as "x_axis_1", count(k8s_namespace_name)
+              as "y_axis_1", k8s_cluster as "breakdown_1" FROM "k8s_events"  GROUP BY x_axis_1,
+              breakdown_1 ORDER BY x_axis_1 ASC
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: k8s_events
+              stream_type: logs
+              "x":
+              - label: Timestamp
+                alias: x_axis_1
+                type: build
+                color: null
+                functionName: histogram
+                sortBy: ASC
+                args:
+                - type: field
+                  value:
+                    field: _timestamp
+                    streamAlias: null
+                - type: histogramInterval
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "y":
+              - label: K8s Namespace Name
+                alias: y_axis_1
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: k8s_namespace_name
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "z": []
+              breakdown:
+              - label: K8s Cluster
+                alias: breakdown_1
+                type: build
+                color: null
+                args:
+                - type: field
+                  value:
+                    field: k8s_cluster
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 96
+            "y": 40
+            "w": 96
+            "h": 18
+            "i": 6
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+      - tabId: "tab-002"
+        name: "Tab2"
+        panels:
+        - id: panel_007
+          type: stacked
+          title: Panel7
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT histogram(_timestamp) as "x_axis_1", count(k8s_namespace_name)
+              as "y_axis_1", k8s_cluster as "breakdown_1" FROM "k8s_events"  GROUP BY x_axis_1,
+              breakdown_1 ORDER BY x_axis_1 ASC
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: k8s_events
+              stream_type: logs
+              "x":
+              - label: Timestamp
+                alias: x_axis_1
+                type: build
+                color: null
+                functionName: histogram
+                sortBy: ASC
+                args:
+                - type: field
+                  value:
+                    field: _timestamp
+                    streamAlias: null
+                - type: histogramInterval
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "y":
+              - label: K8s Namespace Name
+                alias: y_axis_1
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: k8s_namespace_name
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "z": []
+              breakdown:
+              - label: K8s Cluster
+                alias: breakdown_1
+                type: build
+                color: null
+                args:
+                - type: field
+                  value:
+                    field: k8s_cluster
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 0
+            "y": 20
+            "w": 96
+            "h": 18
+            "i": 1
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+        - id: Panel_ID2878810
+          type: h-stacked
+          title: Panel8
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT histogram(_timestamp) as "x_axis_1", count(k8s_namespace_name)
+              as "y_axis_1", k8s_cluster as "breakdown_1" FROM "k8s_events"  GROUP BY x_axis_1,
+              breakdown_1 ORDER BY x_axis_1 ASC
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: k8s_events
+              stream_type: logs
+              "x":
+              - label: Timestamp
+                alias: x_axis_1
+                type: build
+                color: null
+                functionName: histogram
+                sortBy: ASC
+                args:
+                - type: field
+                  value:
+                    field: _timestamp
+                    streamAlias: null
+                - type: histogramInterval
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "y":
+              - label: K8s Namespace Name
+                alias: y_axis_1
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: k8s_namespace_name
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "z": []
+              breakdown:
+              - label: K8s Cluster
+                alias: breakdown_1
+                type: build
+                color: null
+                args:
+                - type: field
+                  value:
+                    field: k8s_cluster
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 96
+            "y": 20
+            "w": 96
+            "h": 18
+            "i": 2
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+        - id: Panel_ID5075010
+          type: geomap
+          title: Panel9
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT geo_city_latitude as "latitude", geo_city_longitude as "longitude",
+              count(c_country) as "weight" FROM "testdata"  GROUP BY latitude, longitude
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: testdata
+              stream_type: logs
+              "x": []
+              "y": []
+              "z": []
+              breakdown: []
+              latitude:
+                label: Geo City Latitude
+                alias: latitude
+                type: build
+                color: '#5960b2'
+                args:
+                - type: field
+                  value:
+                    field: geo_city_latitude
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              longitude:
+                label: Geo City Longitude
+                alias: longitude
+                type: build
+                color: '#5960b2'
+                args:
+                - type: field
+                  value:
+                    field: geo_city_longitude
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              weight:
+                label: C Country
+                alias: weight
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: c_country
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 0
+            "y": 40
+            "w": 96
+            "h": 18
+            "i": 3
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+        - id: Panel_ID4670110
+          type: maps
+          title: Panel10
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT c_country as "name", count(distinct c_ip) as "value_for_maps"
+              FROM "testdata" GROUP BY name
+            vrlFunctionQuery: ''
+            customQuery: true
+            fields:
+              stream: testdata
+              stream_type: logs
+              "x": []
+              "y": []
+              "z": []
+              breakdown: []
+              name:
+                label: Name
+                alias: name
+                type: build
+                color: '#5960b2'
+                args:
+                - type: field
+                  value:
+                    field: name
+                    streamAlias: null
+                havingConditions: []
+              value_for_maps:
+                label: Value For Maps
+                alias: value_for_maps
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: value_for_maps
+                    streamAlias: null
+                havingConditions: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 96
+            "y": 40
+            "w": 96
+            "h": 18
+            "i": 4
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+        - id: Panel_ID1477210
+          type: pie
+          title: Panel11
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT sc_status as "x_axis_1", count(_timestamp) as "y_axis_1" FROM
+              "testdata"  GROUP BY x_axis_1
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: testdata
+              stream_type: logs
+              "x":
+              - label: Sc Status
+                alias: x_axis_1
+                type: build
+                color: null
+                args:
+                - type: field
+                  value:
+                    field: sc_status
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "y":
+              - label: Timestamp
+                alias: y_axis_1
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: _timestamp
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: false
+                showFieldAsJson: false
+              "z": []
+              breakdown: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 0
+            "y": 60
+            "w": 96
+            "h": 18
+            "i": 5
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+        - id: Panel_ID6254210
+          type: donut
+          title: Panel12
+          description: ''
+          config:
+            show_legends: true
+            legends_position: null
+            decimals: 2
+            line_thickness: 1.5
+            step_value: '0'
+            top_results_others: false
+            axis_border_show: false
+            label_option:
+              rotate: 0
+            show_symbol: false
+            line_interpolation: smooth
+            legend_width:
+              unit: px
+            legend_height:
+              unit: px
+            base_map:
+              type: osm
+            map_type:
+              type: world
+            map_view:
+              zoom: 1
+              lat: 0
+              lng: 0
+            map_symbol_style:
+              size: by Value
+              size_by_value:
+                min: 1
+                max: 100
+              size_fixed: 2
+            drilldown: []
+            mark_line: []
+            override_config: []
+            connect_nulls: false
+            no_value_replacement: ''
+            wrap_table_cells: false
+            table_transpose: false
+            table_dynamic_columns: false
+            mappings: []
+            color:
+              mode: palette-classic-by-series
+              fixedColor:
+              - '#53ca53'
+              seriesBy: last
+              colorBySeries: []
+            trellis:
+              layout: null
+              num_of_columns: 1
+              group_by_y_axis: false
+            show_gridlines: true
+            aggregation: last
+            lat_label: latitude
+            lon_label: longitude
+            weight_label: weight
+            name_label: name
+            table_aggregations:
+            - last
+            promql_table_mode: single
+            visible_columns: []
+            hidden_columns: []
+            sticky_columns: []
+          queryType: sql
+          queries:
+          - query: SELECT sc_status as "x_axis_1", count(_timestamp) as "y_axis_1" FROM
+              "testdata"  GROUP BY x_axis_1
+            vrlFunctionQuery: ''
+            customQuery: false
+            fields:
+              stream: testdata
+              stream_type: logs
+              "x":
+              - label: Sc Status
+                alias: x_axis_1
+                type: build
+                color: null
+                args:
+                - type: field
+                  value:
+                    field: sc_status
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: true
+                showFieldAsJson: false
+              "y":
+              - label: Timestamp
+                alias: y_axis_1
+                type: build
+                color: '#5960b2'
+                functionName: count
+                args:
+                - type: field
+                  value:
+                    field: _timestamp
+                    streamAlias: null
+                isDerived: false
+                havingConditions: []
+                treatAsNonTimestamp: false
+                showFieldAsJson: false
+              "z": []
+              breakdown: []
+              filter:
+                filterType: group
+                logicalOperator: AND
+                conditions: []
+            config:
+              promql_legend: ''
+              layer_type: scatter
+              weight_fixed: 1
+              limit: 0
+              min: 0
+              max: 100
+              time_shift: []
+            joins: []
+          layout:
+            "x": 96
+            "y": 60
+            "w": 96
+            "h": 18
+            "i": 6
+          htmlContent: ''
+          markdownContent: ''
+          customChartContent: " // To know more about ECharts , \n// visit: https://echarts.apache.org/examples/en/index.html\
+            \ \n// Example: https://echarts.apache.org/examples/en/editor.html?c=line-simple\
+            \ \n// Define your ECharts 'option' here. \n// 'data' variable is available\
+            \ for use and contains the response data from the search result and it is an\
+            \ array.\noption = {  \n \n};\n  "
+      - tabId: "tab-003"
+        name: Tab3
+        panels: []
+      - tabId: "tab-004"
+        name: Tab4
+        panels: []
+    variables:
+      list: []
+      showDynamicFilters: false
+    defaultDatetimeDuration:
+      type: "relative"
+      relativeTimePeriod: "15m"

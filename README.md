@@ -26,6 +26,7 @@ The OpenObserve Operator allows you to manage OpenObserve Enterprise configurati
 - **Destination**: Alert and pipeline destination definitions (HTTP or email)
 - **Pipeline**: OpenObserve Enterprise data pipeline definitions
 - **Function**: OpenObserve Enterprise VRL transformation functions
+- **Dashboard**: OpenObserve Enterprise dashboard definitions with panels, queries, and visualizations
 
 ## Quick Start
 
@@ -72,6 +73,7 @@ Use templates from the `samples/` directory:
 - `samples/destinations/` - Destination examples for alerts and pipelines
 - `samples/pipelines/` - Pipeline configuration examples
 - `samples/functions/` - Function transformation examples
+- `samples/dashboards/` - Dashboard configuration examples with panels and visualizations
 
 **Important:** The sample files have different configRef requirements:
 - Most samples reference `openobserve-main` in their `configRef`
@@ -95,6 +97,9 @@ kubectl apply -f samples/pipelines/srctodest.yaml
 
 # Deploy a basic function
 kubectl apply -f samples/functions/basic-function.yaml
+
+# Deploy a dashboard
+kubectl apply -f samples/dashboards/minimal-dashboard.yaml
 ```
 
 
