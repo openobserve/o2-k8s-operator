@@ -258,6 +258,7 @@ uninstall_operator() {
     remove_finalizers_if_stuck "OpenObserveFunction" "openobservefunctions" "openobservefunction"
     remove_finalizers_if_stuck "OpenObserveDestination" "openobservedestinations" "openobservedestination"
     remove_finalizers_if_stuck "OpenObserveAlertTemplate" "openobservealerttemplates" "openobservealerttemplate"
+    remove_finalizers_if_stuck "OpenObserveDashboard" "openobservedashboards" "openobservedashboard"
     remove_finalizers_if_stuck "OpenObserveConfig" "openobserveconfigs" "openobserveconfig"
 
 
@@ -275,11 +276,12 @@ uninstall_operator() {
     kubectl delete openobservefunctions --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
     kubectl delete openobservedestinations --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
     kubectl delete openobservealerttemplates --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete openobservedashboards --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
     kubectl delete openobserveconfigs --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
 
     # Final check - if any resources still exist with finalizers, force remove them
     echo -e "${YELLOW}Final cleanup check...${NC}"
-    for resource_type in openobservealerts openobservepipelines openobservefunctions openobservedestinations openobservealerttemplates openobserveconfigs; do
+    for resource_type in openobservealerts openobservepipelines openobservefunctions openobservedestinations openobservealerttemplates openobservedashboards openobserveconfigs; do
         remaining=$(kubectl get $resource_type --all-namespaces --no-headers 2>/dev/null | wc -l)
         if [ "$remaining" -gt 0 ]; then
             echo -e "${YELLOW}  Force removing remaining $resource_type resources...${NC}"
@@ -301,6 +303,7 @@ uninstall_operator() {
     kubectl delete -f manifests/01-o2functions.crd.yaml --ignore-not-found=true 2>/dev/null || true
     kubectl delete -f manifests/01-o2alerttemplates.crd.yaml --ignore-not-found=true 2>/dev/null || true
     kubectl delete -f manifests/01-o2destinations.crd.yaml --ignore-not-found=true 2>/dev/null || true
+    kubectl delete -f manifests/01-o2dashboards.crd.yaml --ignore-not-found=true 2>/dev/null || true
 
     # Delete namespace (this will delete everything in it)
     echo -e "${YELLOW}Deleting namespace ${NAMESPACE}...${NC}"
@@ -354,6 +357,7 @@ deploy_operator() {
     kubectl apply ${DRY_RUN} -f manifests/01-o2functions.crd.yaml
     kubectl apply ${DRY_RUN} -f manifests/01-o2alerttemplates.crd.yaml
     kubectl apply ${DRY_RUN} -f manifests/01-o2destinations.crd.yaml
+    kubectl apply ${DRY_RUN} -f manifests/01-o2dashboards.crd.yaml
     echo -e "${GREEN}✓ CRDs installed${NC}"
 
     # Wait for CRDs to be established
@@ -365,7 +369,8 @@ deploy_operator() {
             crd/openobservealerts.openobserve.ai \
             crd/openobservefunctions.openobserve.ai \
             crd/openobservealerttemplates.openobserve.ai \
-            crd/openobservedestinations.openobserve.ai
+            crd/openobservedestinations.openobserve.ai \
+            crd/openobservedashboards.openobserve.ai
         echo -e "${GREEN}✓ CRDs are ready${NC}"
     else
         echo -e "${YELLOW}Skipping CRD wait (dry-run mode)${NC}"
