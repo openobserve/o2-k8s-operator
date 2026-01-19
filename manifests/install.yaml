@@ -1,0 +1,1993 @@
+# OpenObserve Kubernetes Operator - Complete Installation Manifest
+#
+# This file contains all resources needed to install the OpenObserve Operator:
+# - Namespace (o2operator)
+# - CustomResourceDefinitions (7 CRDs)
+# - RBAC (ServiceAccount, Roles, RoleBindings)
+# - ConfigMap (operator configuration)
+# - Deployment (operator controller)
+# - Service & Webhooks
+#
+# Quick Install:
+#   kubectl apply -f https://raw.githubusercontent.com/openobserve/o2-k8s-operator/main/manifests/install.yaml
+#
+# Requirements:
+#   - Kubernetes 1.19+
+#   - OpenObserve Enterprise instance
+#
+# For more information:
+#   https://github.com/openobserve/o2-k8s-operator
+#
+---
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: o2operator
+  labels:
+    name: o2operator
+    app: openobserve-operator
+---
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: openobserveconfigs.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: OpenObserveConfig
+    listKind: OpenObserveConfigList
+    plural: openobserveconfigs
+    singular: openobserveconfig
+    shortNames:
+    - o2config
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - endpoint
+            - organization
+            - credentialsSecretRef
+            properties:
+              endpoint:
+                type: string
+              organization:
+                type: string
+              credentialsSecretRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                  key:
+                    type: string
+              tlsVerify:
+                type: boolean
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - type
+                  - status
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      format: int64
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+              lastValidationTime:
+                type: string
+                format: date-time
+              observedGeneration:
+                type: integer
+                format: int64
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Endpoint
+      type: string
+      jsonPath: .spec.endpoint
+    - name: Organization
+      type: string
+      jsonPath: .spec.organization
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+---
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: openobservealerts.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: OpenObserveAlert
+    listKind: OpenObserveAlertList
+    plural: openobservealerts
+    singular: openobservealert
+    shortNames:
+    - o2alert
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - configRef
+            - name
+            - streamName
+            - streamType
+            - queryCondition
+            - triggerCondition
+            - destinations
+            properties:
+              configRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+              name:
+                type: string
+                pattern: "^[a-zA-Z0-9_-]+$"
+              org:
+                type: string
+                description: Organization name to create the alert in. If not specified, uses the organization from ConfigRef.
+              streamName:
+                type: string
+                default: default
+              streamType:
+                type: string
+                enum:
+                - logs
+                - metrics
+                - traces
+                default: logs
+              enabled:
+                type: boolean
+                default: true
+              description:
+                type: string
+              isRealTime:
+                type: boolean
+              queryCondition:
+                type: object
+                required:
+                - type
+                properties:
+                  type:
+                    type: string
+                    enum:
+                    - custom
+                    - sql
+                    - promql
+                  sql:
+                    type: string
+                  promql:
+                    type: string
+                  conditions:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  aggregation:
+                    type: object
+                    properties:
+                      groupBy:
+                        type: array
+                        items:
+                          type: string
+                      function:
+                        type: string
+                      having:
+                        type: object
+                        properties:
+                          column:
+                            type: string
+                          operator:
+                            type: string
+                          value:
+                            type: number
+                            format: double
+                          ignoreCase:
+                            type: boolean
+                            default: false
+                  vrlFunction:
+                    type: string
+                  searchEventType:
+                    type: string
+                  promqlCondition:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  multiTimeRange:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        offset:
+                          type: string
+                          pattern: "^[0-9]+(h|d|m)$"
+              triggerCondition:
+                type: object
+                properties:
+                  frequency:
+                    type: integer
+                    format: int64
+                    default: 1
+                    minimum: 1
+                  frequencyType:
+                    type: string
+                    enum:
+                    - minutes
+                    - hours
+                    - days
+                    default: minutes
+                  cron:
+                    type: string
+                  period:
+                    type: integer
+                    format: int64
+                    description: Time window to look back in minutes
+                  silence:
+                    type: integer
+                    format: int64
+                  threshold:
+                    type: integer
+                    format: int64
+                  operator:
+                    type: string
+                    enum:
+                    - "="
+                    - "!="
+                    - ">="
+                    - "<="
+                    - ">"
+                    - "<"
+                  timezone:
+                    type: string
+                  toleranceInSecs:
+                    type: integer
+                    format: int64
+                  alignTime:
+                    type: boolean
+                    default: false
+              destinations:
+                type: array
+                minItems: 1
+                maxItems: 10
+                items:
+                  type: string
+              contextAttributes:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - name
+                  - value
+                  - key
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
+                    key:
+                      type: string
+              rowTemplate:
+                type: string
+              rowTemplateType:
+                type: string
+                enum:
+                - String
+                - json
+                default: String
+              folderId:
+                type: string
+                default: default
+              folderName:
+                type: string
+              deduplication:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
+                  fingerprintFields:
+                    type: array
+                    items:
+                      type: string
+                  timeWindowMinutes:
+                    type: integer
+                    format: int64
+              tzOffset:
+                type: integer
+                format: int32
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - type
+                  - status
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      format: int64
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+              openobserveId:
+                type: string
+              lastSyncTime:
+                type: string
+                format: date-time
+              observedGeneration:
+                type: integer
+                format: int64
+              deletionRetryCount:
+                type: integer
+                description: Tracks the number of deletion attempts
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Stream
+      type: string
+      jsonPath: .spec.streamName
+    - name: Enabled
+      type: boolean
+      jsonPath: .spec.enabled
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+
+---
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: openobservealerttemplates.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: OpenObserveAlertTemplate
+    listKind: OpenObserveAlertTemplateList
+    plural: openobservealerttemplates
+    singular: openobservealerttemplate
+    shortNames:
+    - o2alerttemplate
+    - alerttemplate
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - configRef
+            - name
+            - title
+            - body
+            - type
+            properties:
+              configRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                    description: Name of the OpenObserveConfig resource
+                  namespace:
+                    type: string
+                    description: Namespace of the OpenObserveConfig resource (defaults to same namespace)
+              name:
+                type: string
+                pattern: "^[a-zA-Z0-9_-]+$"
+                description: Unique identifier for the alert template
+              org:
+                type: string
+                description: Organization name to create the alert template in. If not specified, uses the organization from ConfigRef.
+              title:
+                type: string
+                description: Title of the alert template
+              body:
+                type: string
+                description: Template body content (can contain variables and formatting)
+              type:
+                type: string
+                enum:
+                - http
+                - email
+                description: Type of alert template (http or email only)
+              isDefault:
+                type: boolean
+                default: false
+                description: Whether this is a default template
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      format: int64
+              lastSyncTime:
+                type: string
+                format: date-time
+              observedGeneration:
+                type: integer
+                format: int64
+              deletionRetryCount:
+                type: integer
+                description: Tracks the number of deletion attempts
+    additionalPrinterColumns:
+    - name: Type
+      type: string
+      jsonPath: .spec.type
+    - name: Default
+      type: boolean
+      jsonPath: .spec.isDefault
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+    subresources:
+      status: {}
+---
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: openobservedashboards.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: OpenObserveDashboard
+    listKind: OpenObserveDashboardList
+    plural: openobservedashboards
+    singular: openobservedashboard
+    shortNames:
+    - o2dash
+    - o2dashboard
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - configRef
+            - title
+            - dashboard
+            properties:
+              configRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                    description: Name of the OpenObserveConfig resource
+                  namespace:
+                    type: string
+                    description: Namespace of the OpenObserveConfig resource (defaults to same namespace)
+              title:
+                type: string
+                description: Dashboard title - must be unique within the organization and folder
+              org:
+                type: string
+                default: "default"
+                description: Organization name to create the dashboard in. If not specified, defaults to "default"
+              folderName:
+                type: string
+                default: "default"
+                description: Folder name for organizing dashboards. If not specified, defaults to "default". Will be auto-created if it doesn't exist.
+              description:
+                type: string
+                description: Human-readable description of the dashboard
+              dashboard:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+                description: Complete dashboard definition including tabs, panels, queries, and visualizations. This is stored as raw JSON to support the complex dashboard structure.
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      format: int64
+              dashboardId:
+                type: string
+                description: Dashboard ID assigned by OpenObserve
+              folderId:
+                type: string
+                description: Folder ID where the dashboard is stored
+              lastSyncTime:
+                type: string
+                format: date-time
+                description: Timestamp of the last successful sync with OpenObserve
+              observedGeneration:
+                type: integer
+                format: int64
+                description: The generation of the most recently observed dashboard
+              deletionRetryCount:
+                type: integer
+                description: Tracks the number of deletion attempts
+    additionalPrinterColumns:
+    - name: Title
+      type: string
+      jsonPath: .spec.title
+      description: Dashboard title
+    - name: Org
+      type: string
+      jsonPath: .spec.org
+      description: Organization name
+    - name: Folder
+      type: string
+      jsonPath: .spec.folderName
+      description: Folder name
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+      description: Ready status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+      description: Age of the resource
+    subresources:
+      status: {}
+
+---
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: openobservedestinations.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: OpenObserveDestination
+    listKind: OpenObserveDestinationList
+    plural: openobservedestinations
+    singular: openobservedestination
+    shortNames:
+    - o2dest
+    - o2destination
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - configRef
+            - name
+            - type
+            properties:
+              configRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                    description: Name of the OpenObserveConfig resource
+                  namespace:
+                    type: string
+                    description: Namespace of the OpenObserveConfig resource (defaults to same namespace)
+              name:
+                type: string
+                pattern: "^[a-zA-Z0-9_-]+$"
+                description: Unique identifier for the destination
+              org:
+                type: string
+                description: Organization name to create the destination in. If not specified, uses the organization from ConfigRef.
+              type:
+                type: string
+                enum:
+                - http
+                - email
+                - sns
+                description: Type of destination (http, email, or sns)
+              destinationTypeName:
+                type: string
+                enum:
+                - ""
+                - custom
+                - openobserve
+                - splunk
+                - newrelic
+                - elasticsearch
+                - dynatrace
+                - datadog
+                description: Destination type name for pipeline destinations (only for http type)
+              url:
+                type: string
+                description: URL endpoint for HTTP destinations
+              method:
+                type: string
+                enum:
+                - post
+                - put
+                - get
+                default: post
+                description: HTTP method for HTTP destinations
+              headers:
+                type: object
+                additionalProperties:
+                  type: string
+                description: HTTP headers to include in the request
+              metadata:
+                type: object
+                additionalProperties:
+                  type: string
+                description: Additional metadata for the destination
+              skipTlsVerify:
+                type: boolean
+                default: false
+                description: Whether to skip TLS certificate verification
+              outputFormat:
+                x-kubernetes-preserve-unknown-fields: true
+                description: Output format for the destination (json, nestedevent, or elasticsearch bulk format)
+              emails:
+                type: array
+                items:
+                  type: string
+                  format: email
+                description: Email addresses for email destinations
+              template:
+                type: string
+                description: Name of the alert template to use (for alert destinations)
+              actionId:
+                type: string
+                description: Action ID for SNS destinations
+              awsRegion:
+                type: string
+                description: AWS region for SNS destinations
+              snsTopicArn:
+                type: string
+                description: SNS Topic ARN for SNS destinations
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      format: int64
+              lastSyncTime:
+                type: string
+                format: date-time
+              observedGeneration:
+                type: integer
+                format: int64
+              destinationCategory:
+                type: string
+                enum:
+                - alert
+                - pipeline
+                description: Automatically determined category based on type and destinationTypeName
+              deletionRetryCount:
+                type: integer
+                description: Tracks the number of deletion attempts
+    additionalPrinterColumns:
+    - name: Type
+      type: string
+      jsonPath: .spec.type
+    - name: Category
+      type: string
+      jsonPath: .status.destinationCategory
+    - name: Destination-Type
+      type: string
+      jsonPath: .spec.destinationTypeName
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+    subresources:
+      status: {}
+---
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: openobservefunctions.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: OpenObserveFunction
+    listKind: OpenObserveFunctionList
+    plural: openobservefunctions
+    singular: openobservefunction
+    shortNames:
+    - o2function
+    - o2func
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - configRef
+            - name
+            - function
+            properties:
+              configRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                    description: Name of the OpenObserveConfig resource
+                  namespace:
+                    type: string
+                    description: Namespace of the OpenObserveConfig resource (optional)
+              name:
+                type: string
+                pattern: "^[a-zA-Z0-9_-]+$"
+                description: Name of the function (must be unique within the organization)
+              org:
+                type: string
+                description: Organization name to create the function in. If not specified, uses the organization from ConfigRef.
+              function:
+                type: string
+                description: VRL function code to transform the data
+              numArgs:
+                type: integer
+                format: int32
+                default: 0
+                description: Number of arguments the function accepts
+              params:
+                type: string
+                default: "string"
+                description: Parameters configuration for the function
+              transType:
+                type: integer
+                format: int32
+                default: 0
+                description: Transformation type (0 for standard transformation)
+              test:
+                type: object
+                description: Test configuration for the function (optional)
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
+                    description: Whether to test the function before creating/updating
+                  events:
+                    type: array
+                    description: Test events to validate the function
+                    minItems: 1
+                    items:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - type
+                  - status
+                  properties:
+                    type:
+                      type: string
+                      description: Type of condition
+                    status:
+                      type: string
+                      description: Status of the condition (True, False, Unknown)
+                    observedGeneration:
+                      type: integer
+                      format: int64
+                      description: Generation observed by the controller
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                      description: Last time the condition changed
+                    reason:
+                      type: string
+                      description: Reason for the condition change
+                    message:
+                      type: string
+                      description: Human-readable message
+              openobserveFunctionId:
+                type: string
+                description: Function ID in OpenObserve
+              lastSyncTime:
+                type: string
+                format: date-time
+                description: Last time the function was synced with OpenObserve
+              observedGeneration:
+                type: integer
+                format: int64
+                description: Generation observed by the controller
+              dependencies:
+                type: array
+                description: List of dependencies for this function
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: Dependency ID
+                    name:
+                      type: string
+                      description: Dependency name
+              testResults:
+                type: object
+                description: Results from the last test execution
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the test was successful
+                  testedAt:
+                    type: string
+                    format: date-time
+                    description: When the test was executed
+                  message:
+                    type: string
+                    description: Test result message
+              lastError:
+                type: string
+                description: Last error encountered during reconciliation
+              deletionRetryCount:
+                type: integer
+                description: Tracks the number of deletion attempts
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Function
+      type: string
+      jsonPath: .spec.name
+      priority: 0
+    - name: Organization
+      type: string
+      jsonPath: .spec.org
+      priority: 1
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+      priority: 0
+    - name: Dependencies
+      type: integer
+      jsonPath: .status.dependencies[*]
+      priority: 1
+    - name: Test
+      type: boolean
+      jsonPath: .spec.test.enabled
+      priority: 1
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+      priority: 0
+---
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: openobservepipelines.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: OpenObservePipeline
+    listKind: OpenObservePipelineList
+    plural: openobservepipelines
+    singular: openobservepipeline
+    shortNames:
+    - o2pipeline
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            required:
+            - configRef
+            - name
+            - source
+            - nodes
+            properties:
+              configRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+              name:
+                type: string
+              description:
+                type: string
+              enabled:
+                type: boolean
+                default: true
+              org:
+                type: string
+                description: Organization name
+              pipeline_id:
+                type: string
+                description: Pipeline ID in OpenObserve
+              version:
+                type: integer
+                format: int64
+                description: Pipeline version
+              source:
+                type: object
+                required:
+                - streamType
+                properties:
+                  streamName:
+                    type: string
+                    description: Name of the source stream (optional for query-based sources)
+                  streamType:
+                    type: string
+                    enum:
+                    - logs
+                    - metrics
+                    - traces
+                    default: logs
+                  sourceType:
+                    type: string
+                    enum:
+                    - realtime
+                    - scheduled
+                    default: realtime
+                  orgId:
+                    type: string
+                    description: Organization ID for the source
+                  tzOffset:
+                    type: integer
+                    description: Timezone offset in minutes
+                  delay:
+                    type: integer
+                    description: Delay in seconds before processing
+                  queryCondition:
+                    type: object
+                    description: Query condition for scheduled pipelines with query sources
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - custom
+                        - sql
+                        - promql
+                        default: custom
+                      sql:
+                        type: string
+                      promql:
+                        type: string
+                      promqlCondition:
+                        type: object
+                        properties:
+                          column:
+                            type: string
+                          operator:
+                            type: string
+                          value:
+                            type: number
+                          ignoreCase:
+                            type: boolean
+                      conditions:
+                        type: object
+                      aggregation:
+                        type: object
+                      vrlFunction:
+                        type: string
+                      searchEventType:
+                        type: string
+                      multiTimeRange:
+                        type: array
+                        items:
+                          type: object
+                  triggerCondition:
+                    type: object
+                    description: Trigger condition for scheduled pipelines
+                    properties:
+                      frequency:
+                        type: integer
+                        minimum: 1
+                        default: 1
+                      frequencyType:
+                        type: string
+                        enum:
+                        - minutes
+                        - hours
+                        - days
+                        - cron
+                        default: minutes
+                      cron:
+                        type: string
+                      period:
+                        type: integer
+                        minimum: 0
+                        default: 0
+                      threshold:
+                        type: integer
+                        minimum: 0
+                        default: 0
+                      operator:
+                        type: string
+                        enum:
+                        - "="
+                        - "!="
+                        - ">"
+                        - ">="
+                        - "<"
+                        - "<="
+                        - Contains
+                        - NotContains
+                        default: ">="
+                      silence:
+                        type: integer
+                        minimum: 0
+                        default: 0
+                      timezone:
+                        type: string
+                        default: UTC
+                      toleranceInSecs:
+                        type: integer
+                      alignTime:
+                        type: boolean
+              nodes:
+                type: array
+                minItems: 1
+                items:
+                  type: object
+                  required:
+                  - id
+                  - type
+                  - name
+                  properties:
+                    id:
+                      type: string
+                    type:
+                      type: string
+                    name:
+                      type: string
+                    config:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+              edges:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - source
+                  - target
+                  properties:
+                    source:
+                      type: string
+                    target:
+                      type: string
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - type
+                  - status
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      format: int64
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+              openobservePipelineId:
+                type: string
+              lastSyncTime:
+                type: string
+                format: date-time
+              version:
+                type: integer
+                format: int32
+              pausedAt:
+                type: integer
+                format: int64
+              lastError:
+                type: string
+              observedGeneration:
+                type: integer
+                format: int64
+              deletionRetryCount:
+                type: integer
+                description: Tracks the number of deletion attempts
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Source
+      type: string
+      jsonPath: .spec.source.streamName
+    - name: Enabled
+      type: boolean
+      jsonPath: .spec.enabled
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openobserve-operator-config
+  namespace: o2operator
+data:
+  # Controller Concurrency Settings
+  # These control how many resources each controller processes in parallel
+  ALERT_CONTROLLER_CONCURRENCY: "1"        # Default: 1, Recommended: 1-20
+  TEMPLATE_CONTROLLER_CONCURRENCY: "1"     # Default: 1, Recommended: 1-10
+  DESTINATION_CONTROLLER_CONCURRENCY: "1"  # Default: 1, Recommended: 1-20
+  PIPELINE_CONTROLLER_CONCURRENCY: "1"     # Default: 1, Recommended: 1-10
+  FUNCTION_CONTROLLER_CONCURRENCY: "1"     # Default: 1, Recommended: 1-5
+  CONFIG_CONTROLLER_CONCURRENCY: "1"       # Default: 1, Recommended: 1-3
+  DASHBOARD_CONTROLLER_CONCURRENCY: "1"    # Default: 1, Recommended: 1-10
+
+  # API Rate Limiting
+  # Controls how fast we make requests to OpenObserve API
+  O2_RATE_LIMIT_RPS: "10"      # Requests per second (Default: 10, Max recommended: 100)
+  O2_RATE_LIMIT_BURST: "20"    # Burst capacity (Default: 20, Max recommended: 200)
+
+  # HTTP Connection Pool
+  # Controls HTTP connection management
+  O2_MAX_CONNS_PER_HOST: "10"        # Max concurrent connections (Default: 10)
+  O2_MAX_IDLE_CONNS: "100"           # Total idle connections (Default: 100)
+  O2_MAX_IDLE_CONNS_PER_HOST: "10"   # Idle connections per host (Default: 10)
+  O2_IDLE_CONN_TIMEOUT: "90s"        # Idle connection timeout (Default: 90s)
+  O2_HTTP_TIMEOUT: "30s"              # HTTP request timeout (Default: 30s)
+
+  # Logging
+  O2OPERATOR_LOG_LEVEL: "info"       # Log level: debug, info, error
+
+  # Optional: Skip stream validation in webhook
+  # SKIP_STREAM_VALIDATION: "false"
+---
+
+# ServiceAccount for the operator
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openobserve-operator
+  namespace: o2operator
+  labels:
+    app: openobserve-operator
+
+---
+# ClusterRole with all necessary permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: openobserve-operator
+  labels:
+    app: openobserve-operator
+rules:
+# Core resources
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - services/finalizers
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  - namespaces
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+# Deployment resources
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+# Monitoring resources
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
+
+# OpenObserve CRDs
+- apiGroups:
+  - openobserve.ai
+  resources:
+  - openobserveconfigs
+  - openobserveconfigs/status
+  - openobserveconfigs/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+- apiGroups:
+  - openobserve.ai
+  resources:
+  - openobservepipelines
+  - openobservepipelines/status
+  - openobservepipelines/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+- apiGroups:
+  - openobserve.ai
+  resources:
+  - openobservealerts
+  - openobservealerts/status
+  - openobservealerts/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+- apiGroups:
+  - openobserve.ai
+  resources:
+  - openobservefunctions
+  - openobservefunctions/status
+  - openobservefunctions/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+- apiGroups:
+  - openobserve.ai
+  resources:
+  - openobservealerttemplates
+  - openobservealerttemplates/status
+  - openobservealerttemplates/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+- apiGroups:
+  - openobserve.ai
+  resources:
+  - openobservedestinations
+  - openobservedestinations/status
+  - openobservedestinations/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+- apiGroups:
+  - openobserve.ai
+  resources:
+  - openobservedashboards
+  - openobservedashboards/status
+  - openobservedashboards/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+
+# Webhook permissions
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - validatingwebhookconfigurations
+  - mutatingwebhookconfigurations
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+
+# Certificate management for webhooks
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+
+# Ingress resources (if needed)
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+
+---
+# ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openobserve-operator
+  labels:
+    app: openobserve-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: openobserve-operator
+subjects:
+- kind: ServiceAccount
+  name: openobserve-operator
+  namespace: o2operator
+
+---
+# Role for leader election
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: openobserve-operator-leader-election
+  namespace: o2operator
+  labels:
+    app: openobserve-operator
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+
+---
+# RoleBinding for leader election
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openobserve-operator-leader-election
+  namespace: o2operator
+  labels:
+    app: openobserve-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: openobserve-operator-leader-election
+subjects:
+- kind: ServiceAccount
+  name: openobserve-operator
+  namespace: o2operator
+---
+
+# Production-Grade Operator Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openobserve-operator
+  namespace: o2operator
+  labels:
+    app: openobserve-operator
+    control-plane: controller-manager
+    version: "v0.1.0"  # Add version label
+spec:
+  replicas: 2  # High Availability with leader election
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # Zero downtime deployments
+  selector:
+    matchLabels:
+      app: openobserve-operator
+      control-plane: controller-manager
+  template:
+    metadata:
+      labels:
+        app: openobserve-operator
+        control-plane: controller-manager
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: openobserve-operator
+      # Priority for critical infrastructure components
+      priorityClassName: system-cluster-critical
+      # Anti-affinity to spread replicas across nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: openobserve-operator
+              topologyKey: kubernetes.io/hostname
+      # Topology spread for even distribution
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: openobserve-operator
+      containers:
+      - name: manager
+        # Use specific version tag for production
+        image: public.ecr.aws/zinclabs/o2operator:latest
+        # image: 058694856476.dkr.ecr.us-east-2.amazonaws.com/openobserve/o2operator-dev:latest
+        imagePullPolicy: Always  # More efficient for tagged versions
+        command:
+        - /manager
+        args:
+        - --leader-elect=true
+        - --metrics-bind-address=:8080
+        - --health-probe-bind-address=:8081
+        - --webhook-port=9443
+        - --enable-webhooks=true
+        # Load environment variables from ConfigMap
+        envFrom:
+        - configMapRef:
+            name: openobserve-operator-config
+        env:
+        - name: WATCH_NAMESPACE
+          value: ""  # Empty means watch all namespaces
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: OPERATOR_NAME
+          value: "openobserve-operator"
+        ports:
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        - containerPort: 8081
+          name: health
+          protocol: TCP
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        # Startup probe for slow starts
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 30  # 5 minutes total
+        resources:
+          requests:
+            cpu: 200m      # Increased for production
+            memory: 256Mi  # Increased for production
+          limits:
+            cpu: 1000m     # 1 CPU core
+            memory: 1Gi    # 1GB RAM
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65534  # nobody user
+          runAsGroup: 65534
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: cert
+          readOnly: true
+        - mountPath: /tmp
+          name: tmp-dir
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: openobserve-webhook-server-cert
+      - name: tmp-dir
+        emptyDir:
+          sizeLimit: 100Mi  # Limit temp directory size
+      nodeSelector:
+        kubernetes.io/os: linux
+        # Architecture selector removed to support multi-arch deployments (amd64, arm64, etc.)
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/control-plane
+        effect: NoSchedule
+      # DNS policy for better performance
+      dnsPolicy: ClusterFirst
+      # Termination grace period
+      terminationGracePeriodSeconds: 30
+      # Restart policy
+      restartPolicy: Always
+
+---
+# PodDisruptionBudget for high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: openobserve-operator-pdb
+  namespace: o2operator
+spec:
+  minAvailable: 1  # Always keep at least 1 pod running
+  selector:
+    matchLabels:
+      app: openobserve-operator
+      control-plane: controller-manager
+
+---
+# Service for the operator metrics
+apiVersion: v1
+kind: Service
+metadata:
+  name: openobserve-operator-metrics
+  namespace: o2operator
+  labels:
+    app: openobserve-operator
+    control-plane: controller-manager
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  - name: health
+    port: 8081
+    protocol: TCP
+    targetPort: 8081
+  selector:
+    app: openobserve-operator
+    control-plane: controller-manager
+
+---
+# Service for the webhook
+apiVersion: v1
+kind: Service
+metadata:
+  name: openobserve-webhook-service
+  namespace: o2operator
+  labels:
+    app: openobserve-operator
+spec:
+  type: ClusterIP
+  ports:
+  - name: webhook
+    port: 443
+    protocol: TCP
+    targetPort: 9443
+  selector:
+    app: openobserve-operator
+    control-plane: controller-manager
+---
+
+# ValidatingWebhookConfiguration
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: openobserve-validating-webhook
+  labels:
+    app: openobserve-operator
+webhooks:
+- name: validate.alerts.openobserve.ai
+  clientConfig:
+    service:
+      name: openobserve-webhook-service
+      namespace: o2operator
+      path: /validate-openobserve-ai-v1alpha1-openobservealert
+    # CA bundle will be injected by the operator or cert-manager
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJekNDQWd1Z0F3SUJBZ0lVSWtnQWJ3TXlOMnBwWEV1Njc0VUhrSVZXRHFVd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0lURWZNQjBHQTFVRUF3d1diM0JsYm05aWMyVnlkbVV0ZDJWaWFHOXZheTFqWVRBZUZ3MHlOakF4TVRReApOREE0TlRoYUZ3MHpOakF4TVRJeE5EQTROVGhhTUNFeEh6QWRCZ05WQkFNTUZtOXdaVzV2WW5ObGNuWmxMWGRsClltaHZiMnN0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURDbHRNOWhyc2kKem5aZWdyV0xIY2N1UGhFakhqRThpRm5BclZ0NjlhZzBzc1h4YWxPVWpndVBTWVJROWdIbEc0OUt1UnhvTWlLRQpRM3R0UHVUTkJGQW9ESGZ1YytoRENBSUtBdERXNFRrYVZwUktFYjlvVThORHltaHdZblNzazI0TERiczdNWXhvCmttQzFGdUd3MHdUUGF5QUhyQ3FtcExIbVNURmNmZ2Y5WmE0UEVFeFpXSzFYSlNYTmNxSHIxRUMzMkZCdUdFcjQKMGJ1NnFIcG9vTUgxTUNVYlF6M29TdS90NDJiTmFSWEQwUDYrcDhuazhMSnFNT3ZyVUdxalpyZGd6ZEF1YXZMcwpXN2I1TjV2eW1OVStzbTlBRm5lR1VHSm0wWTJSam1YSmxyM2lOWnR4c0o2VGk4SW1oRDZFWEc5bmNkckdKayt1CmxNTHl3UVVHU3lLTkFnTUJBQUdqVXpCUk1CMEdBMVVkRGdRV0JCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1kKNXpBZkJnTlZIU01FR0RBV2dCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1k1ekFQQmdOVkhSTUJBZjhFQlRBRApBUUgvTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFBSFllbXlENkdUMGpWbkZnWFlhandRbEIxdnc3UzdjUnpwCjYwQnY1bk9EUDd0VkJSR3ZUcGR5Vnh2MHhjZHlmMVVXNEF4YzArMEpWLzMvc21seWdTQlJENXZsVWpZSXNVU2gKYWlQM1FWb2lGLzN5Vi9pSVdXOFVDSko2VDRaOXlzNDNuc0Y5bk9XYkxCYUpraDl5Mk1oVmRVc1QxWDVpV3p4VApFTnlGWExlL3R2WmlHcUNLeWlacWlBOFdaUHMyMmVCOXNMSGlCTTNBeHZBdlJmU296V29lREJlbmJqamw3c0kwCkNLODJ2aWxPZFBmcnNnMkNabWk1TGZVVXlETEZ4R1Q4d29rZjR3TCt6aXcrdkFJZ21DU25kNXZwQTYrSDlLYVQKenNGQVg0aFB5SmRYUTk0RSsya3ByaHBSQkEvZHRiK1ZlbXJTeExUVFhBZVMzM3gvU1hhagotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  rules:
+  - apiGroups:
+    - openobserve.ai
+    apiVersions:
+    - v1alpha1
+    resources:
+    - openobservealerts
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+  admissionReviewVersions:
+  - v1
+  - v1beta1
+  sideEffects: None
+  failurePolicy: Fail
+  timeoutSeconds: 10
+
+- name: validate.pipelines.openobserve.ai
+  clientConfig:
+    service:
+      name: openobserve-webhook-service
+      namespace: o2operator
+      path: /validate-openobserve-ai-v1alpha1-openobservepipeline
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJekNDQWd1Z0F3SUJBZ0lVSWtnQWJ3TXlOMnBwWEV1Njc0VUhrSVZXRHFVd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0lURWZNQjBHQTFVRUF3d1diM0JsYm05aWMyVnlkbVV0ZDJWaWFHOXZheTFqWVRBZUZ3MHlOakF4TVRReApOREE0TlRoYUZ3MHpOakF4TVRJeE5EQTROVGhhTUNFeEh6QWRCZ05WQkFNTUZtOXdaVzV2WW5ObGNuWmxMWGRsClltaHZiMnN0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURDbHRNOWhyc2kKem5aZWdyV0xIY2N1UGhFakhqRThpRm5BclZ0NjlhZzBzc1h4YWxPVWpndVBTWVJROWdIbEc0OUt1UnhvTWlLRQpRM3R0UHVUTkJGQW9ESGZ1YytoRENBSUtBdERXNFRrYVZwUktFYjlvVThORHltaHdZblNzazI0TERiczdNWXhvCmttQzFGdUd3MHdUUGF5QUhyQ3FtcExIbVNURmNmZ2Y5WmE0UEVFeFpXSzFYSlNYTmNxSHIxRUMzMkZCdUdFcjQKMGJ1NnFIcG9vTUgxTUNVYlF6M29TdS90NDJiTmFSWEQwUDYrcDhuazhMSnFNT3ZyVUdxalpyZGd6ZEF1YXZMcwpXN2I1TjV2eW1OVStzbTlBRm5lR1VHSm0wWTJSam1YSmxyM2lOWnR4c0o2VGk4SW1oRDZFWEc5bmNkckdKayt1CmxNTHl3UVVHU3lLTkFnTUJBQUdqVXpCUk1CMEdBMVVkRGdRV0JCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1kKNXpBZkJnTlZIU01FR0RBV2dCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1k1ekFQQmdOVkhSTUJBZjhFQlRBRApBUUgvTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFBSFllbXlENkdUMGpWbkZnWFlhandRbEIxdnc3UzdjUnpwCjYwQnY1bk9EUDd0VkJSR3ZUcGR5Vnh2MHhjZHlmMVVXNEF4YzArMEpWLzMvc21seWdTQlJENXZsVWpZSXNVU2gKYWlQM1FWb2lGLzN5Vi9pSVdXOFVDSko2VDRaOXlzNDNuc0Y5bk9XYkxCYUpraDl5Mk1oVmRVc1QxWDVpV3p4VApFTnlGWExlL3R2WmlHcUNLeWlacWlBOFdaUHMyMmVCOXNMSGlCTTNBeHZBdlJmU296V29lREJlbmJqamw3c0kwCkNLODJ2aWxPZFBmcnNnMkNabWk1TGZVVXlETEZ4R1Q4d29rZjR3TCt6aXcrdkFJZ21DU25kNXZwQTYrSDlLYVQKenNGQVg0aFB5SmRYUTk0RSsya3ByaHBSQkEvZHRiK1ZlbXJTeExUVFhBZVMzM3gvU1hhagotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  rules:
+  - apiGroups:
+    - openobserve.ai
+    apiVersions:
+    - v1alpha1
+    resources:
+    - openobservepipelines
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+  admissionReviewVersions:
+  - v1
+  - v1beta1
+  sideEffects: None
+  failurePolicy: Fail
+  timeoutSeconds: 10
+
+- name: validate.configs.openobserve.ai
+  clientConfig:
+    service:
+      name: openobserve-webhook-service
+      namespace: o2operator
+      path: /validate-openobserve-ai-v1alpha1-openobserveconfig
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJekNDQWd1Z0F3SUJBZ0lVSWtnQWJ3TXlOMnBwWEV1Njc0VUhrSVZXRHFVd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0lURWZNQjBHQTFVRUF3d1diM0JsYm05aWMyVnlkbVV0ZDJWaWFHOXZheTFqWVRBZUZ3MHlOakF4TVRReApOREE0TlRoYUZ3MHpOakF4TVRJeE5EQTROVGhhTUNFeEh6QWRCZ05WQkFNTUZtOXdaVzV2WW5ObGNuWmxMWGRsClltaHZiMnN0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURDbHRNOWhyc2kKem5aZWdyV0xIY2N1UGhFakhqRThpRm5BclZ0NjlhZzBzc1h4YWxPVWpndVBTWVJROWdIbEc0OUt1UnhvTWlLRQpRM3R0UHVUTkJGQW9ESGZ1YytoRENBSUtBdERXNFRrYVZwUktFYjlvVThORHltaHdZblNzazI0TERiczdNWXhvCmttQzFGdUd3MHdUUGF5QUhyQ3FtcExIbVNURmNmZ2Y5WmE0UEVFeFpXSzFYSlNYTmNxSHIxRUMzMkZCdUdFcjQKMGJ1NnFIcG9vTUgxTUNVYlF6M29TdS90NDJiTmFSWEQwUDYrcDhuazhMSnFNT3ZyVUdxalpyZGd6ZEF1YXZMcwpXN2I1TjV2eW1OVStzbTlBRm5lR1VHSm0wWTJSam1YSmxyM2lOWnR4c0o2VGk4SW1oRDZFWEc5bmNkckdKayt1CmxNTHl3UVVHU3lLTkFnTUJBQUdqVXpCUk1CMEdBMVVkRGdRV0JCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1kKNXpBZkJnTlZIU01FR0RBV2dCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1k1ekFQQmdOVkhSTUJBZjhFQlRBRApBUUgvTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFBSFllbXlENkdUMGpWbkZnWFlhandRbEIxdnc3UzdjUnpwCjYwQnY1bk9EUDd0VkJSR3ZUcGR5Vnh2MHhjZHlmMVVXNEF4YzArMEpWLzMvc21seWdTQlJENXZsVWpZSXNVU2gKYWlQM1FWb2lGLzN5Vi9pSVdXOFVDSko2VDRaOXlzNDNuc0Y5bk9XYkxCYUpraDl5Mk1oVmRVc1QxWDVpV3p4VApFTnlGWExlL3R2WmlHcUNLeWlacWlBOFdaUHMyMmVCOXNMSGlCTTNBeHZBdlJmU296V29lREJlbmJqamw3c0kwCkNLODJ2aWxPZFBmcnNnMkNabWk1TGZVVXlETEZ4R1Q4d29rZjR3TCt6aXcrdkFJZ21DU25kNXZwQTYrSDlLYVQKenNGQVg0aFB5SmRYUTk0RSsya3ByaHBSQkEvZHRiK1ZlbXJTeExUVFhBZVMzM3gvU1hhagotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  rules:
+  - apiGroups:
+    - openobserve.ai
+    apiVersions:
+    - v1alpha1
+    resources:
+    - openobserveconfigs
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+  admissionReviewVersions:
+  - v1
+  - v1beta1
+  sideEffects: None
+  failurePolicy: Fail
+  timeoutSeconds: 10
+
+- name: validate.functions.openobserve.ai
+  clientConfig:
+    service:
+      name: openobserve-webhook-service
+      namespace: o2operator
+      path: /validate-openobserve-ai-v1alpha1-openobservefunction
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJekNDQWd1Z0F3SUJBZ0lVSWtnQWJ3TXlOMnBwWEV1Njc0VUhrSVZXRHFVd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0lURWZNQjBHQTFVRUF3d1diM0JsYm05aWMyVnlkbVV0ZDJWaWFHOXZheTFqWVRBZUZ3MHlOakF4TVRReApOREE0TlRoYUZ3MHpOakF4TVRJeE5EQTROVGhhTUNFeEh6QWRCZ05WQkFNTUZtOXdaVzV2WW5ObGNuWmxMWGRsClltaHZiMnN0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURDbHRNOWhyc2kKem5aZWdyV0xIY2N1UGhFakhqRThpRm5BclZ0NjlhZzBzc1h4YWxPVWpndVBTWVJROWdIbEc0OUt1UnhvTWlLRQpRM3R0UHVUTkJGQW9ESGZ1YytoRENBSUtBdERXNFRrYVZwUktFYjlvVThORHltaHdZblNzazI0TERiczdNWXhvCmttQzFGdUd3MHdUUGF5QUhyQ3FtcExIbVNURmNmZ2Y5WmE0UEVFeFpXSzFYSlNYTmNxSHIxRUMzMkZCdUdFcjQKMGJ1NnFIcG9vTUgxTUNVYlF6M29TdS90NDJiTmFSWEQwUDYrcDhuazhMSnFNT3ZyVUdxalpyZGd6ZEF1YXZMcwpXN2I1TjV2eW1OVStzbTlBRm5lR1VHSm0wWTJSam1YSmxyM2lOWnR4c0o2VGk4SW1oRDZFWEc5bmNkckdKayt1CmxNTHl3UVVHU3lLTkFnTUJBQUdqVXpCUk1CMEdBMVVkRGdRV0JCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1kKNXpBZkJnTlZIU01FR0RBV2dCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1k1ekFQQmdOVkhSTUJBZjhFQlRBRApBUUgvTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFBSFllbXlENkdUMGpWbkZnWFlhandRbEIxdnc3UzdjUnpwCjYwQnY1bk9EUDd0VkJSR3ZUcGR5Vnh2MHhjZHlmMVVXNEF4YzArMEpWLzMvc21seWdTQlJENXZsVWpZSXNVU2gKYWlQM1FWb2lGLzN5Vi9pSVdXOFVDSko2VDRaOXlzNDNuc0Y5bk9XYkxCYUpraDl5Mk1oVmRVc1QxWDVpV3p4VApFTnlGWExlL3R2WmlHcUNLeWlacWlBOFdaUHMyMmVCOXNMSGlCTTNBeHZBdlJmU296V29lREJlbmJqamw3c0kwCkNLODJ2aWxPZFBmcnNnMkNabWk1TGZVVXlETEZ4R1Q4d29rZjR3TCt6aXcrdkFJZ21DU25kNXZwQTYrSDlLYVQKenNGQVg0aFB5SmRYUTk0RSsya3ByaHBSQkEvZHRiK1ZlbXJTeExUVFhBZVMzM3gvU1hhagotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  rules:
+  - apiGroups:
+    - openobserve.ai
+    apiVersions:
+    - v1alpha1
+    resources:
+    - openobservefunctions
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+  admissionReviewVersions:
+  - v1
+  - v1beta1
+  sideEffects: None
+  failurePolicy: Fail
+  timeoutSeconds: 10
+
+- name: validate.alerttemplates.openobserve.ai
+  clientConfig:
+    service:
+      name: openobserve-webhook-service
+      namespace: o2operator
+      path: /validate-openobserve-ai-v1alpha1-openobservealerttemplate
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJekNDQWd1Z0F3SUJBZ0lVSWtnQWJ3TXlOMnBwWEV1Njc0VUhrSVZXRHFVd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0lURWZNQjBHQTFVRUF3d1diM0JsYm05aWMyVnlkbVV0ZDJWaWFHOXZheTFqWVRBZUZ3MHlOakF4TVRReApOREE0TlRoYUZ3MHpOakF4TVRJeE5EQTROVGhhTUNFeEh6QWRCZ05WQkFNTUZtOXdaVzV2WW5ObGNuWmxMWGRsClltaHZiMnN0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURDbHRNOWhyc2kKem5aZWdyV0xIY2N1UGhFakhqRThpRm5BclZ0NjlhZzBzc1h4YWxPVWpndVBTWVJROWdIbEc0OUt1UnhvTWlLRQpRM3R0UHVUTkJGQW9ESGZ1YytoRENBSUtBdERXNFRrYVZwUktFYjlvVThORHltaHdZblNzazI0TERiczdNWXhvCmttQzFGdUd3MHdUUGF5QUhyQ3FtcExIbVNURmNmZ2Y5WmE0UEVFeFpXSzFYSlNYTmNxSHIxRUMzMkZCdUdFcjQKMGJ1NnFIcG9vTUgxTUNVYlF6M29TdS90NDJiTmFSWEQwUDYrcDhuazhMSnFNT3ZyVUdxalpyZGd6ZEF1YXZMcwpXN2I1TjV2eW1OVStzbTlBRm5lR1VHSm0wWTJSam1YSmxyM2lOWnR4c0o2VGk4SW1oRDZFWEc5bmNkckdKayt1CmxNTHl3UVVHU3lLTkFnTUJBQUdqVXpCUk1CMEdBMVVkRGdRV0JCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1kKNXpBZkJnTlZIU01FR0RBV2dCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1k1ekFQQmdOVkhSTUJBZjhFQlRBRApBUUgvTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFBSFllbXlENkdUMGpWbkZnWFlhandRbEIxdnc3UzdjUnpwCjYwQnY1bk9EUDd0VkJSR3ZUcGR5Vnh2MHhjZHlmMVVXNEF4YzArMEpWLzMvc21seWdTQlJENXZsVWpZSXNVU2gKYWlQM1FWb2lGLzN5Vi9pSVdXOFVDSko2VDRaOXlzNDNuc0Y5bk9XYkxCYUpraDl5Mk1oVmRVc1QxWDVpV3p4VApFTnlGWExlL3R2WmlHcUNLeWlacWlBOFdaUHMyMmVCOXNMSGlCTTNBeHZBdlJmU296V29lREJlbmJqamw3c0kwCkNLODJ2aWxPZFBmcnNnMkNabWk1TGZVVXlETEZ4R1Q4d29rZjR3TCt6aXcrdkFJZ21DU25kNXZwQTYrSDlLYVQKenNGQVg0aFB5SmRYUTk0RSsya3ByaHBSQkEvZHRiK1ZlbXJTeExUVFhBZVMzM3gvU1hhagotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  rules:
+  - apiGroups:
+    - openobserve.ai
+    apiVersions:
+    - v1alpha1
+    resources:
+    - openobservealerttemplates
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+  admissionReviewVersions:
+  - v1
+  - v1beta1
+  sideEffects: None
+  failurePolicy: Fail
+  timeoutSeconds: 10
+
+- name: validate.destinations.openobserve.ai
+  clientConfig:
+    service:
+      name: openobserve-webhook-service
+      namespace: o2operator
+      path: /validate-openobserve-ai-v1alpha1-openobservedestination
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJekNDQWd1Z0F3SUJBZ0lVSWtnQWJ3TXlOMnBwWEV1Njc0VUhrSVZXRHFVd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0lURWZNQjBHQTFVRUF3d1diM0JsYm05aWMyVnlkbVV0ZDJWaWFHOXZheTFqWVRBZUZ3MHlOakF4TVRReApOREE0TlRoYUZ3MHpOakF4TVRJeE5EQTROVGhhTUNFeEh6QWRCZ05WQkFNTUZtOXdaVzV2WW5ObGNuWmxMWGRsClltaHZiMnN0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURDbHRNOWhyc2kKem5aZWdyV0xIY2N1UGhFakhqRThpRm5BclZ0NjlhZzBzc1h4YWxPVWpndVBTWVJROWdIbEc0OUt1UnhvTWlLRQpRM3R0UHVUTkJGQW9ESGZ1YytoRENBSUtBdERXNFRrYVZwUktFYjlvVThORHltaHdZblNzazI0TERiczdNWXhvCmttQzFGdUd3MHdUUGF5QUhyQ3FtcExIbVNURmNmZ2Y5WmE0UEVFeFpXSzFYSlNYTmNxSHIxRUMzMkZCdUdFcjQKMGJ1NnFIcG9vTUgxTUNVYlF6M29TdS90NDJiTmFSWEQwUDYrcDhuazhMSnFNT3ZyVUdxalpyZGd6ZEF1YXZMcwpXN2I1TjV2eW1OVStzbTlBRm5lR1VHSm0wWTJSam1YSmxyM2lOWnR4c0o2VGk4SW1oRDZFWEc5bmNkckdKayt1CmxNTHl3UVVHU3lLTkFnTUJBQUdqVXpCUk1CMEdBMVVkRGdRV0JCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1kKNXpBZkJnTlZIU01FR0RBV2dCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1k1ekFQQmdOVkhSTUJBZjhFQlRBRApBUUgvTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFBSFllbXlENkdUMGpWbkZnWFlhandRbEIxdnc3UzdjUnpwCjYwQnY1bk9EUDd0VkJSR3ZUcGR5Vnh2MHhjZHlmMVVXNEF4YzArMEpWLzMvc21seWdTQlJENXZsVWpZSXNVU2gKYWlQM1FWb2lGLzN5Vi9pSVdXOFVDSko2VDRaOXlzNDNuc0Y5bk9XYkxCYUpraDl5Mk1oVmRVc1QxWDVpV3p4VApFTnlGWExlL3R2WmlHcUNLeWlacWlBOFdaUHMyMmVCOXNMSGlCTTNBeHZBdlJmU296V29lREJlbmJqamw3c0kwCkNLODJ2aWxPZFBmcnNnMkNabWk1TGZVVXlETEZ4R1Q4d29rZjR3TCt6aXcrdkFJZ21DU25kNXZwQTYrSDlLYVQKenNGQVg0aFB5SmRYUTk0RSsya3ByaHBSQkEvZHRiK1ZlbXJTeExUVFhBZVMzM3gvU1hhagotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  rules:
+  - apiGroups:
+    - openobserve.ai
+    apiVersions:
+    - v1alpha1
+    resources:
+    - openobservedestinations
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+  admissionReviewVersions:
+  - v1
+  - v1beta1
+  sideEffects: None
+  failurePolicy: Fail
+  timeoutSeconds: 10
+
+- name: validate.dashboards.openobserve.ai
+  clientConfig:
+    service:
+      name: openobserve-webhook-service
+      namespace: o2operator
+      path: /validate-openobserve-ai-v1alpha1-openobservedashboard
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJekNDQWd1Z0F3SUJBZ0lVSWtnQWJ3TXlOMnBwWEV1Njc0VUhrSVZXRHFVd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0lURWZNQjBHQTFVRUF3d1diM0JsYm05aWMyVnlkbVV0ZDJWaWFHOXZheTFqWVRBZUZ3MHlOakF4TVRReApOREE0TlRoYUZ3MHpOakF4TVRJeE5EQTROVGhhTUNFeEh6QWRCZ05WQkFNTUZtOXdaVzV2WW5ObGNuWmxMWGRsClltaHZiMnN0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURDbHRNOWhyc2kKem5aZWdyV0xIY2N1UGhFakhqRThpRm5BclZ0NjlhZzBzc1h4YWxPVWpndVBTWVJROWdIbEc0OUt1UnhvTWlLRQpRM3R0UHVUTkJGQW9ESGZ1YytoRENBSUtBdERXNFRrYVZwUktFYjlvVThORHltaHdZblNzazI0TERiczdNWXhvCmttQzFGdUd3MHdUUGF5QUhyQ3FtcExIbVNURmNmZ2Y5WmE0UEVFeFpXSzFYSlNYTmNxSHIxRUMzMkZCdUdFcjQKMGJ1NnFIcG9vTUgxTUNVYlF6M29TdS90NDJiTmFSWEQwUDYrcDhuazhMSnFNT3ZyVUdxalpyZGd6ZEF1YXZMcwpXN2I1TjV2eW1OVStzbTlBRm5lR1VHSm0wWTJSam1YSmxyM2lOWnR4c0o2VGk4SW1oRDZFWEc5bmNkckdKayt1CmxNTHl3UVVHU3lLTkFnTUJBQUdqVXpCUk1CMEdBMVVkRGdRV0JCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1kKNXpBZkJnTlZIU01FR0RBV2dCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1k1ekFQQmdOVkhSTUJBZjhFQlRBRApBUUgvTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFBSFllbXlENkdUMGpWbkZnWFlhandRbEIxdnc3UzdjUnpwCjYwQnY1bk9EUDd0VkJSR3ZUcGR5Vnh2MHhjZHlmMVVXNEF4YzArMEpWLzMvc21seWdTQlJENXZsVWpZSXNVU2gKYWlQM1FWb2lGLzN5Vi9pSVdXOFVDSko2VDRaOXlzNDNuc0Y5bk9XYkxCYUpraDl5Mk1oVmRVc1QxWDVpV3p4VApFTnlGWExlL3R2WmlHcUNLeWlacWlBOFdaUHMyMmVCOXNMSGlCTTNBeHZBdlJmU296V29lREJlbmJqamw3c0kwCkNLODJ2aWxPZFBmcnNnMkNabWk1TGZVVXlETEZ4R1Q4d29rZjR3TCt6aXcrdkFJZ21DU25kNXZwQTYrSDlLYVQKenNGQVg0aFB5SmRYUTk0RSsya3ByaHBSQkEvZHRiK1ZlbXJTeExUVFhBZVMzM3gvU1hhagotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  rules:
+  - apiGroups:
+    - openobserve.ai
+    apiVersions:
+    - v1alpha1
+    resources:
+    - openobservedashboards
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+  admissionReviewVersions:
+  - v1
+  - v1beta1
+  sideEffects: None
+  failurePolicy: Fail
+  timeoutSeconds: 10
+---
+
