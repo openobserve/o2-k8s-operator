@@ -2,6 +2,36 @@
 
 # OpenObserve Operator Deployment Script
 # This script deploys the OpenObserve operator to a Kubernetes cluster
+#
+# Available Commands:
+#   Deploy (default):
+#     ./deploy.sh                                                     # Deploy with default settings
+#     ./deploy.sh --image <repo> --tag <tag>                        # Deploy with custom image
+#     ./deploy.sh --namespace <name>                                # Deploy to custom namespace
+#     ./deploy.sh --skip-certs                                      # Skip certificate generation
+#     ./deploy.sh --dry-run                                         # Preview changes without applying
+#
+#   Uninstall:
+#     ./deploy.sh --uninstall                                       # Remove operator and all resources
+#
+#   Help:
+#     ./deploy.sh --help                                           # Show detailed help message
+#
+# Options:
+#   --image <repo>      Docker image repository (optional, uses manifest default)
+#   --tag <tag>         Docker image tag (default: latest)
+#   --namespace <name>  Namespace to deploy to (default: o2operator)
+#   --skip-certs        Skip certificate generation (use existing certificates)
+#   --dry-run           Preview changes without applying them
+#   --uninstall         Uninstall the operator and clean up all resources
+#   -h, --help          Show detailed help message with examples
+#
+# Examples:
+#   ./deploy.sh                                                     # Deploy with defaults
+#   ./deploy.sh --image public.ecr.aws/zinclabs/o2operator        # Deploy from public ECR
+#   ./deploy.sh --image 058694856476.dkr.ecr.us-east-1.amazonaws.com/o2operator  # Private ECR
+#   ./deploy.sh --dry-run                                          # Preview deployment
+#   ./deploy.sh --uninstall                                        # Clean uninstall
 
 set -e
 

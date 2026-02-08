@@ -14,6 +14,7 @@ kubectl apply -f manifests/01-o2configs.crd.yaml
 kubectl apply -f manifests/01-o2alerts.crd.yaml
 kubectl apply -f manifests/01-o2alerttemplates.crd.yaml
 kubectl apply -f manifests/01-o2destinations.crd.yaml
+kubectl apply -f manifests/01-o2dashboards.crd.yaml
 kubectl apply -f manifests/01-o2pipelines.crd.yaml
 kubectl apply -f manifests/01-o2functions.crd.yaml
 ```
