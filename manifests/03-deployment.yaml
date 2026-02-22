@@ -30,8 +30,8 @@ spec:
         prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: openobserve-operator
-      imagePullSecrets:
-        - name: ecr-secret
+      # imagePullSecrets:
+      #   - name: ecr-secret
       # Priority for critical infrastructure components
       priorityClassName: system-cluster-critical
       # Anti-affinity to spread replicas across nodes
