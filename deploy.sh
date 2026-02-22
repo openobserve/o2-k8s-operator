@@ -374,6 +374,12 @@ deploy_operator() {
         echo -e "${YELLOW}Using existing image from manifest: ${EXISTING_IMAGE}${NC}"
     fi
 
+    # Substitute NAMESPACE into manifests (repo files are hardcoded to o2operator)
+    for f in manifests/*.yaml; do
+        [ -f "$f" ] || continue
+        sed "s/namespace: o2operator/namespace: ${NAMESPACE}/g; s/name: o2operator/name: ${NAMESPACE}/g" "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+    done
+
     # Apply namespace
     echo -e "${YELLOW}Creating namespace...${NC}"
     kubectl apply ${DRY_RUN} -f manifests/00-namespace.yaml

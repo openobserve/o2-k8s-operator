@@ -1,0 +1,25 @@
+# Example: User Account Authentication Configuration
+# User accounts use any key other than 'token' and require username + password in the secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: o2-user-account
+  namespace: o2operator
+type: Opaque
+stringData:
+  username: devuser@openobserve.ai           # User email
+  password: your-user-account-password         # User password
+---
+apiVersion: openobserve.ai/v1alpha1
+kind: OpenObserveConfig
+metadata:
+  name: openobserve-account
+  namespace: o2operator
+spec:
+  endpoint: https://example.openobserve.ai
+  organization: default
+  credentialsSecretRef:
+    name: o2-user-account
+    key: password  # Any key other than "token" identifies this as a user account
+                   # Common values: "password", "credentials", or leave empty
+  tlsVerify: true
