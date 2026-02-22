@@ -55,8 +55,8 @@ spec:
       containers:
       - name: manager
         # Use specific version tag for production
-        # image: public.ecr.aws/zinclabs/o2operator:latest
-        image: 058694856476.dkr.ecr.us-east-2.amazonaws.com/openobserve/o2operator-dev:latest
+        image: public.ecr.aws/zinclabs/o2operator:latest
+        # image: 058694856476.dkr.ecr.us-east-2.amazonaws.com/openobserve/o2operator-dev:latest
         imagePullPolicy: Always  # More efficient for tagged versions
         command:
         - /manager
