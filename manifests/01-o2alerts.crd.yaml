@@ -239,6 +239,9 @@ spec:
                       type: string
               openobserveId:
                 type: string
+              organization:
+                type: string
+                description: Organization where the alert was created
               lastSyncTime:
                 type: string
                 format: date-time

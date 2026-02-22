@@ -85,6 +85,9 @@ spec:
               folderId:
                 type: string
                 description: Folder ID where the dashboard is stored
+              organization:
+                type: string
+                description: Organization where the dashboard was created
               lastSyncTime:
                 type: string
                 format: date-time

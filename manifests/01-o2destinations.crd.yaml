@@ -133,6 +133,9 @@ spec:
                     observedGeneration:
                       type: integer
                       format: int64
+              organization:
+                type: string
+                description: Organization where the destination was created
               lastSyncTime:
                 type: string
                 format: date-time

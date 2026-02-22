@@ -26,7 +26,7 @@ Each pipeline destination type has specific output format requirements:
 | `openobserve` | `json` | JSON format only |
 | `splunk` | `nestedevent` | Splunk HEC event format |
 | `newrelic` | `json` | JSON format only |
-| `elasticsearch` | `esbulk` | Elasticsearch bulk format |
+| `elasticsearch` | nested object `{esbulk: {index: "..."}}` | Elasticsearch bulk format with index |
 | `dynatrace` | `json` | JSON format only |
 | `datadog` | `json` | JSON format only |
 | `custom` | `json` or `nestedevent` | Flexible format options |
@@ -43,7 +43,7 @@ Each pipeline destination type has specific output format requirements:
 - `pipeline-dynatrace-destination.yaml` - Send data to Dynatrace
 - `pipeline-elasticsearch-destination.yaml` - Send data to Elasticsearch
 - `pipeline-newrelic-destination.yaml` - Send data to New Relic
-- `pipeline-openobserve-desntination.yaml` - Send data to another OpenObserve instance
+- `pipeline-openobserve-destination.yaml` - Send data to another OpenObserve instance
 - `pipeline-splunk-destination.yaml` - Send data to Splunk HEC
 
 ## Validation Rules

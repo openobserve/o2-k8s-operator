@@ -112,6 +112,9 @@ spec:
               openobserveFunctionId:
                 type: string
                 description: Function ID in OpenObserve
+              organization:
+                type: string
+                description: Organization where the function was created
               lastSyncTime:
                 type: string
                 format: date-time
