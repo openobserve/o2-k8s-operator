@@ -87,7 +87,7 @@ Schedule PromQL queries for metrics processing and alerting.
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObservePipeline
+kind: Pipeline
 metadata:
   name: <pipeline-name>
   namespace: o2operator

@@ -78,7 +78,7 @@ A dashboard resource requires:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveDashboard
+kind: Dashboard
 metadata:
   name: my-dashboard
   namespace: o2operator

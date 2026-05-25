@@ -63,7 +63,7 @@ Each alert sample follows this basic structure:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveAlert
+kind: Alert
 metadata:
   name: <alert-name>
   namespace: o2operator

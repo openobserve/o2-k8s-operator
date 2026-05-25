@@ -6,88 +6,82 @@ This directory contains all the Kubernetes manifests required to deploy the Open
 
 | File | Description |
 |------|-------------|
-| `00-namespace.yaml` | Creates the `o2operator` namespace for all operator resources |
-| `01-o2*.crd.yaml` | Custom Resource Definitions (CRDs) for OpenObserve resources |
-| `02-configmap.yaml` | Configuration settings for the operator |
-| `02-rbac.yaml` | RBAC permissions (ServiceAccount, ClusterRole, ClusterRoleBinding) |
-| `03-deployment.yaml` | Production-grade operator deployment with HA support |
-| `04-webhook.yaml` | Webhook configurations for admission control |
+| `namespace.yaml` | Creates the `o2operator` namespace for all operator resources |
+| `crds.yaml` | All 7 Custom Resource Definitions (CRDs) in a single file |
+| `configmap.yaml` | Configuration settings for the operator |
+| `rbac.yaml` | RBAC permissions (ServiceAccount, ClusterRole, ClusterRoleBinding) |
+| `deployment.yaml` | Production-grade operator deployment with HA support |
+| `webhook.yaml` | Webhook configurations for admission control |
+| `install.yaml` | All of the above combined into a single file |
 
-## 📋 CRD Files
+## 📋 CRDs
 
-The operator manages 7 custom resource types:
+All 7 custom resource types are defined in `crds.yaml`:
 
-- **`01-o2alerts.crd.yaml`**: Alert definitions for monitoring
-- **`01-o2alerttemplates.crd.yaml`**: Reusable alert templates
-- **`01-o2configs.crd.yaml`**: OpenObserve connection configurations
-- **`01-o2dashboards.crd.yaml`**: Dashboard definitions with panels and visualizations
-- **`01-o2destinations.crd.yaml`**: Notification destinations (Slack, email, PagerDuty)
-- **`01-o2functions.crd.yaml`**: Data transformation functions
-- **`01-o2pipelines.crd.yaml`**: Data pipeline definitions
+| Kind | API Name | Description |
+|------|----------|-------------|
+| `Alert` | `alerts.openobserve.ai` | Alert definitions for monitoring |
+| `AlertTemplate` | `alerttemplates.openobserve.ai` | Reusable alert templates |
+| `Config` | `configs.openobserve.ai` | OpenObserve connection configurations |
+| `Dashboard` | `dashboards.openobserve.ai` | Dashboard definitions with panels and visualizations |
+| `Destination` | `destinations.openobserve.ai` | Notification destinations (Slack, email, PagerDuty) |
+| `Function` | `functions.openobserve.ai` | Data transformation functions |
+| `Pipeline` | `pipelines.openobserve.ai` | Data pipeline definitions |
 
 ## 🚀 Deployment Instructions
 
-### Quick Install (All Resources)
-
-Deploy all resources in the correct order:
+### Quick Install (Single File)
 
 ```bash
-# Apply all manifests
-kubectl apply -f 00-namespace.yaml
-kubectl apply -f 01-o2alerts.crd.yaml
-kubectl apply -f 01-o2alerttemplates.crd.yaml
-kubectl apply -f 01-o2configs.crd.yaml
-kubectl apply -f 01-o2dashboards.crd.yaml
-kubectl apply -f 01-o2destinations.crd.yaml
-kubectl apply -f 01-o2functions.crd.yaml
-kubectl apply -f 01-o2pipelines.crd.yaml
-kubectl apply -f 02-configmap.yaml
-kubectl apply -f 02-rbac.yaml
-kubectl apply -f 03-deployment.yaml
-kubectl apply -f 04-webhook.yaml
+kubectl apply -f install.yaml
 ```
 
-Or apply all at once:
+### Quick Install (Individual Files)
 
 ```bash
-kubectl apply -f .
+kubectl apply -f namespace.yaml
+kubectl apply -f crds.yaml
+kubectl apply -f configmap.yaml
+kubectl apply -f rbac.yaml
+kubectl apply -f deployment.yaml
+kubectl apply -f webhook.yaml
 ```
 
 ### Step-by-Step Installation
 
 1. **Create namespace:**
    ```bash
-   kubectl apply -f 00-namespace.yaml
+   kubectl apply -f namespace.yaml
    ```
 
 2. **Install CRDs:**
    ```bash
-   kubectl apply -f 01-o2*.crd.yaml
+   kubectl apply -f crds.yaml
    ```
 
 3. **Configure operator settings:**
    ```bash
-   kubectl apply -f 02-configmap.yaml
+   kubectl apply -f configmap.yaml
    ```
 
 4. **Set up RBAC:**
    ```bash
-   kubectl apply -f 02-rbac.yaml
+   kubectl apply -f rbac.yaml
    ```
 
 5. **Deploy the operator:**
    ```bash
-   kubectl apply -f 03-deployment.yaml
+   kubectl apply -f deployment.yaml
    ```
 
 6. **Enable webhooks (optional but recommended):**
    ```bash
-   kubectl apply -f 04-webhook.yaml
+   kubectl apply -f webhook.yaml
    ```
 
 ## ⚙️ Configuration
 
-### ConfigMap Settings (`02-configmap.yaml`)
+### ConfigMap Settings (`configmap.yaml`)
 
 The ConfigMap controls operator behavior:
 
@@ -107,7 +101,7 @@ The ConfigMap controls operator behavior:
 | `O2_RATE_LIMIT` | Requests per second limit | 10 |
 | `O2_RATE_BURST` | Burst capacity | 20 |
 
-### Deployment Configuration (`03-deployment.yaml`)
+### Deployment Configuration (`deployment.yaml`)
 
 The deployment includes:
 - **High Availability**: 2 replicas with leader election enabled
@@ -137,17 +131,17 @@ To upgrade the operator:
 
 1. Update CRDs first (if changed):
    ```bash
-   kubectl apply -f 01-o2*.crd.yaml
+   kubectl apply -f crds.yaml
    ```
 
 2. Update ConfigMap if needed:
    ```bash
-   kubectl apply -f 02-configmap.yaml
+   kubectl apply -f configmap.yaml
    ```
 
 3. Apply new deployment:
    ```bash
-   kubectl apply -f 03-deployment.yaml
+   kubectl apply -f deployment.yaml
    ```
 
 The deployment uses RollingUpdate strategy with `maxUnavailable: 0` to ensure zero downtime.
@@ -158,19 +152,19 @@ Remove all operator resources:
 
 ```bash
 # Delete webhook configuration first
-kubectl delete -f 04-webhook.yaml
+kubectl delete -f webhook.yaml
 
 # Delete deployment
-kubectl delete -f 03-deployment.yaml
+kubectl delete -f deployment.yaml
 
 # Delete RBAC
-kubectl delete -f 02-rbac.yaml
+kubectl delete -f rbac.yaml
 
 # Delete ConfigMap
-kubectl delete -f 02-configmap.yaml
+kubectl delete -f configmap.yaml
 
 # Delete CRDs (this will delete all custom resources)
-kubectl delete -f 01-o2*.crd.yaml
+kubectl delete -f crds.yaml
 
 # Delete namespace (optional - will remove everything)
 kubectl delete namespace o2operator

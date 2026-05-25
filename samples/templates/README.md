@@ -152,7 +152,7 @@ kubectl apply -f samples/alerttemplates/
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveDestination
+kind: Destination
 metadata:
   name: slack-destination
 spec:
@@ -167,7 +167,7 @@ spec:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveAlertTemplate
+kind: AlertTemplate
 metadata:
   name: custom-slack-template
 spec:
@@ -209,7 +209,7 @@ spec:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveAlertTemplate
+kind: AlertTemplate
 metadata:
   name: custom-email-template
 spec:
@@ -239,7 +239,7 @@ spec:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveAlertTemplate
+kind: AlertTemplate
 metadata:
   name: pagerduty-template
 spec:

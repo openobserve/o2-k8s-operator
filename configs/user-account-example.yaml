@@ -11,7 +11,7 @@ stringData:
   password: your-user-account-password         # User password
 ---
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveConfig
+kind: Config
 metadata:
   name: openobserve-account
   namespace: o2operator

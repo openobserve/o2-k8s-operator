@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: o2operator
+  labels:
+    name: o2operator
+    app: openobserve-operator

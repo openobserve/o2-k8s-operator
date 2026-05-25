@@ -55,7 +55,7 @@ Once you've created the OpenObserveConfig, you can reference it in your resource
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveAlert
+kind: Alert
 metadata:
   name: my-alert
 spec:
@@ -115,7 +115,7 @@ To check which type of authentication is being used:
 
 ```bash
 # Check the OpenObserveConfig
-kubectl get openobserveconfig -o yaml
+kubectl get config -o yaml
 
 # Look for the credentialsSecretRef.key field:
 # - key: "token" → Service Account

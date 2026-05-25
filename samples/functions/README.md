@@ -56,7 +56,7 @@ Before using these samples:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveFunction
+kind: Function
 metadata:
   name: <function-name>
   namespace: o2operator
@@ -337,7 +337,7 @@ Functions can be referenced in OpenObserve pipelines:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObservePipeline
+kind: Pipeline
 metadata:
   name: log-processing-pipeline
 spec:

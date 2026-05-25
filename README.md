@@ -122,7 +122,7 @@ stringData:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveConfig
+kind: Config
 metadata:
   name: production
 spec:
@@ -169,7 +169,7 @@ spec:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveAlertTemplate
+kind: AlertTemplate
 metadata:
   name: slack-webhook-template
 spec:
@@ -199,7 +199,7 @@ spec:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveDestination
+kind: Destination
 metadata:
   name: slack-alerts
 spec:
@@ -220,7 +220,7 @@ spec:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveFunction
+kind: Function
 metadata:
   name: data-transformer
 spec:

@@ -55,7 +55,7 @@ Connect to your OpenObserve Enterprise instances with secure credential manageme
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveConfig
+kind: Config
 metadata:
   name: production
 spec:
@@ -102,7 +102,7 @@ Create reusable templates for Slack, PagerDuty, email, or any webhook with rich 
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveAlertTemplate
+kind: AlertTemplate
 metadata:
   name: slack-template
 spec:
@@ -132,7 +132,7 @@ Route alerts and pipeline data to multiple destinations (Slack, PagerDuty, email
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveDestination
+kind: Destination
 metadata:
   name: slack-alerts
 spec:
@@ -153,7 +153,7 @@ Write VRL (Vector Remap Language) functions for powerful data transformations wi
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObserveFunction
+kind: Function
 metadata:
   name: data-enricher
 spec:
@@ -186,7 +186,7 @@ Build sophisticated data processing pipelines with node-based architecture, sche
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
-kind: OpenObservePipeline
+kind: Pipeline
 metadata:
   name: error-log-processor
 spec:
