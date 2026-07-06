@@ -89,6 +89,6 @@ kubectl describe openobservedestination webhook-alert-dest -n o2operator
 Common validation errors and solutions:
 
 1. **"Organization 'X' does not exist"** - Ensure the organization exists in OpenObserve or use the correct org name
-2. **"Alert template 'Y' does not exist in organization 'X'"** - Create the template first using OpenObserveAlertTemplate resource
+2. **"Alert template 'Y' does not exist in organization 'X'"** - Create the template first using AlertTemplate resource
 3. **"outputFormat must be 'Z'"** - Check the output format requirements table above
 4. **"Email destinations require SMTP to be configured"** - Configure SMTP in your OpenObserve instance

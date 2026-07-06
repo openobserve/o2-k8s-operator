@@ -68,99 +68,27 @@ rules:
 - apiGroups:
   - openobserve.ai
   resources:
-  - openobserveconfigs
-  - openobserveconfigs/status
-  - openobserveconfigs/finalizers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-
-- apiGroups:
-  - openobserve.ai
-  resources:
-  - openobservepipelines
-  - openobservepipelines/status
-  - openobservepipelines/finalizers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-
-- apiGroups:
-  - openobserve.ai
-  resources:
-  - openobservealerts
-  - openobservealerts/status
-  - openobservealerts/finalizers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-
-- apiGroups:
-  - openobserve.ai
-  resources:
-  - openobservefunctions
-  - openobservefunctions/status
-  - openobservefunctions/finalizers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-
-- apiGroups:
-  - openobserve.ai
-  resources:
-  - openobservealerttemplates
-  - openobservealerttemplates/status
-  - openobservealerttemplates/finalizers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-
-- apiGroups:
-  - openobserve.ai
-  resources:
-  - openobservedestinations
-  - openobservedestinations/status
-  - openobservedestinations/finalizers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-
-- apiGroups:
-  - openobserve.ai
-  resources:
-  - openobservedashboards
-  - openobservedashboards/status
-  - openobservedashboards/finalizers
+  - configs
+  - configs/status
+  - configs/finalizers
+  - alerts
+  - alerts/status
+  - alerts/finalizers
+  - alerttemplates
+  - alerttemplates/status
+  - alerttemplates/finalizers
+  - dashboards
+  - dashboards/status
+  - dashboards/finalizers
+  - destinations
+  - destinations/status
+  - destinations/finalizers
+  - functions
+  - functions/status
+  - functions/finalizers
+  - pipelines
+  - pipelines/status
+  - pipelines/finalizers
   verbs:
   - create
   - delete
