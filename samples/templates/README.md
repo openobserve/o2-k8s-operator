@@ -4,7 +4,7 @@ This directory contains example alert template configurations for the OpenObserv
 
 ## Overview
 
-The OpenObserve AlertTemplate CRD (`OpenObserveAlertTemplate`) allows you to create reusable notification templates that format alert data for different communication channels. These templates support dynamic variable substitution and can be referenced by multiple alerts through destinations.
+The OpenObserve AlertTemplate CRD (`AlertTemplate`) allows you to create reusable notification templates that format alert data for different communication channels. These templates support dynamic variable substitution and can be referenced by multiple alerts through destinations.
 
 ## Why Use Alert Templates?
 

@@ -283,13 +283,13 @@ uninstall_operator() {
     echo -e "${YELLOW}Checking for stuck resources and removing finalizers...${NC}"
 
     # Process each resource type
-    remove_finalizers_if_stuck "OpenObserveAlert" "openobservealerts" "openobservealert"
-    remove_finalizers_if_stuck "OpenObservePipeline" "openobservepipelines" "openobservepipeline"
-    remove_finalizers_if_stuck "OpenObserveFunction" "openobservefunctions" "openobservefunction"
-    remove_finalizers_if_stuck "OpenObserveDestination" "openobservedestinations" "openobservedestination"
-    remove_finalizers_if_stuck "OpenObserveAlertTemplate" "openobservealerttemplates" "openobservealerttemplate"
-    remove_finalizers_if_stuck "OpenObserveDashboard" "openobservedashboards" "openobservedashboard"
-    remove_finalizers_if_stuck "OpenObserveConfig" "openobserveconfigs" "openobserveconfig"
+    remove_finalizers_if_stuck "Alert" "alerts" "alert"
+    remove_finalizers_if_stuck "Pipeline" "pipelines" "pipeline"
+    remove_finalizers_if_stuck "Function" "functions" "function"
+    remove_finalizers_if_stuck "Destination" "destinations" "destination"
+    remove_finalizers_if_stuck "AlertTemplate" "alerttemplates" "alerttemplate"
+    remove_finalizers_if_stuck "Dashboard" "dashboards" "dashboard"
+    remove_finalizers_if_stuck "Config" "configs" "config"
 
 
     # Now delete all resources
@@ -301,17 +301,17 @@ uninstall_operator() {
 
     # Try to delete all custom resources (with timeout to prevent hanging)
     echo -e "${YELLOW}Deleting custom resources...${NC}"
-    kubectl delete openobservealerts --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete openobservepipelines --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete openobservefunctions --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete openobservedestinations --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete openobservealerttemplates --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete openobservedashboards --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete openobserveconfigs --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete alerts --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete pipelines --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete functions --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete destinations --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete alerttemplates --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete dashboards --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete configs --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
 
     # Final check - if any resources still exist with finalizers, force remove them
     echo -e "${YELLOW}Final cleanup check...${NC}"
-    for resource_type in openobservealerts openobservepipelines openobservefunctions openobservedestinations openobservealerttemplates openobservedashboards openobserveconfigs; do
+    for resource_type in alerts pipelines functions destinations alerttemplates dashboards configs; do
         remaining=$(kubectl get $resource_type --all-namespaces --no-headers 2>/dev/null | wc -l)
         if [ "$remaining" -gt 0 ]; then
             echo -e "${YELLOW}  Force removing remaining $resource_type resources...${NC}"
@@ -400,13 +400,13 @@ deploy_operator() {
     if [ -z "$DRY_RUN" ]; then
         echo -e "${YELLOW}Waiting for CRDs to be established...${NC}"
         kubectl wait --for condition=established --timeout=60s \
-            crd/openobserveconfigs.openobserve.ai \
-            crd/openobservepipelines.openobserve.ai \
-            crd/openobservealerts.openobserve.ai \
-            crd/openobservefunctions.openobserve.ai \
-            crd/openobservealerttemplates.openobserve.ai \
-            crd/openobservedestinations.openobserve.ai \
-            crd/openobservedashboards.openobserve.ai
+            crd/configs.openobserve.ai \
+            crd/pipelines.openobserve.ai \
+            crd/alerts.openobserve.ai \
+            crd/functions.openobserve.ai \
+            crd/alerttemplates.openobserve.ai \
+            crd/destinations.openobserve.ai \
+            crd/dashboards.openobserve.ai
         echo -e "${GREEN}✓ CRDs are ready${NC}"
     else
         echo -e "${YELLOW}Skipping CRD wait (dry-run mode)${NC}"
