@@ -82,12 +82,20 @@ o2 promrule render -f prometheusrule-example.yaml --binding prometheusrule-bindi
 ## Ownership and deletion
 
 Each managed alert carries the tags `managed-by:o2-operator`,
-`o2-binding:<cluster>/<namespace>/<name>`, `o2-rule:<key>` and `o2-hash:<hash>`.
-An alert also counts as managed only if its owner is the user the Config signs
-in as. As a result:
+`o2-binding:<cluster>/<namespace>/<name>`, `o2-rule:<key>`, `o2-hash:<hash>` and
+`o2-name:<hash>`. An alert counts as managed only when all of these hold:
+- it carries the binding's tags;
+- its owner is the user the Config signs in as;
+- its `o2-name` tag still matches its name.
 
-- Alerts that people created, including UI clones of managed alerts, are never
-  modified or deleted.
+As a result:
+
+- Alerts that people created are never modified or deleted. That includes UI
+  clones, which copy the tags but get a new name.
+- Renaming a managed alert in the UI detaches it; the operator then creates a
+  fresh one.
+- Extra copies with the same name are reported (`DuplicateIgnored`), never
+  deleted.
 - Removing a rule, or relabelling its object out of the selector, deletes that
   rule's alert.
 - If the selector matches no object at all, nothing is deleted, and a
@@ -124,4 +132,5 @@ Metrics on the operator's `/metrics` endpoint:
 
 - `o2_operator_promrule_alerts`
 - `o2_operator_promrule_rule_failures`
+- `o2_operator_promrule_ready`
 - `o2_operator_promrule_sync_total`
