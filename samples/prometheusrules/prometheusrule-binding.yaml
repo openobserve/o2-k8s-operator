@@ -1,0 +1,27 @@
+# Syncs every PrometheusRule labelled openobserve.io/sync=true in this namespace into
+# OpenObserve alerts. The PrometheusRules themselves are only read, never changed.
+apiVersion: openobserve.ai/v1alpha1
+kind: PrometheusRuleBinding
+metadata:
+  name: platform-alerts
+  namespace: o2operator
+spec:
+  configRef:
+    name: openobserve-main
+    namespace: o2operator
+  ruleSelector:
+    matchLabels:
+      openobserve.io/sync: "true"
+  folder: Platform Alerts
+  destinations:
+    - default-webhook
+  tags:
+    - platform
+  defaults:
+    period: 1m
+    silence: 0m
+  overrides:
+    - alert: ExampleAlert
+      silence: 30m
+      dedupFields:
+        - instance

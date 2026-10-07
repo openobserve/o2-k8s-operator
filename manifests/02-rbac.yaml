@@ -63,6 +63,15 @@ rules:
   verbs:
   - get
   - create
+# PrometheusRules are read, never written
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - prometheusrules
+  verbs:
+  - get
+  - list
+  - watch
 
 # OpenObserve CRDs
 - apiGroups:
@@ -89,6 +98,9 @@ rules:
   - pipelines
   - pipelines/status
   - pipelines/finalizers
+  - prometheusrulebindings
+  - prometheusrulebindings/status
+  - prometheusrulebindings/finalizers
   verbs:
   - create
   - delete

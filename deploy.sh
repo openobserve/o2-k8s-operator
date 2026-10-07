@@ -289,6 +289,7 @@ uninstall_operator() {
     remove_finalizers_if_stuck "Destination" "destinations" "destination"
     remove_finalizers_if_stuck "AlertTemplate" "alerttemplates" "alerttemplate"
     remove_finalizers_if_stuck "Dashboard" "dashboards" "dashboard"
+    remove_finalizers_if_stuck "PrometheusRuleBinding" "prometheusrulebindings" "prometheusrulebinding"
     remove_finalizers_if_stuck "Config" "configs" "config"
 
 
@@ -307,11 +308,12 @@ uninstall_operator() {
     kubectl delete destinations --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
     kubectl delete alerttemplates --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
     kubectl delete dashboards --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete prometheusrulebindings --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
     kubectl delete configs --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
 
     # Final check - if any resources still exist with finalizers, force remove them
     echo -e "${YELLOW}Final cleanup check...${NC}"
-    for resource_type in alerts pipelines functions destinations alerttemplates dashboards configs; do
+    for resource_type in alerts pipelines functions destinations alerttemplates dashboards prometheusrulebindings configs; do
         remaining=$(kubectl get $resource_type --all-namespaces --no-headers 2>/dev/null | wc -l)
         if [ "$remaining" -gt 0 ]; then
             echo -e "${YELLOW}  Force removing remaining $resource_type resources...${NC}"
@@ -334,6 +336,7 @@ uninstall_operator() {
     kubectl delete -f manifests/01-o2alerttemplates.crd.yaml --ignore-not-found=true 2>/dev/null || true
     kubectl delete -f manifests/01-o2destinations.crd.yaml --ignore-not-found=true 2>/dev/null || true
     kubectl delete -f manifests/01-o2dashboards.crd.yaml --ignore-not-found=true 2>/dev/null || true
+    kubectl delete -f manifests/01-o2prometheusrulebindings.crd.yaml --ignore-not-found=true 2>/dev/null || true
 
     # Delete namespace (this will delete everything in it)
     echo -e "${YELLOW}Deleting namespace ${NAMESPACE}...${NC}"
@@ -394,6 +397,7 @@ deploy_operator() {
     kubectl apply ${DRY_RUN} -f manifests/01-o2alerttemplates.crd.yaml
     kubectl apply ${DRY_RUN} -f manifests/01-o2destinations.crd.yaml
     kubectl apply ${DRY_RUN} -f manifests/01-o2dashboards.crd.yaml
+    kubectl apply ${DRY_RUN} -f manifests/01-o2prometheusrulebindings.crd.yaml
     echo -e "${GREEN}✓ CRDs installed${NC}"
 
     # Wait for CRDs to be established
@@ -406,7 +410,8 @@ deploy_operator() {
             crd/functions.openobserve.ai \
             crd/alerttemplates.openobserve.ai \
             crd/destinations.openobserve.ai \
-            crd/dashboards.openobserve.ai
+            crd/dashboards.openobserve.ai \
+            crd/prometheusrulebindings.openobserve.ai
         echo -e "${GREEN}✓ CRDs are ready${NC}"
     else
         echo -e "${YELLOW}Skipping CRD wait (dry-run mode)${NC}"
