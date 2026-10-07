@@ -94,8 +94,12 @@ As a result:
   clones, which copy the tags but get a new name.
 - Renaming a managed alert in the UI detaches it; the operator then creates a
   fresh one.
-- Extra copies with the same name are reported (`DuplicateIgnored`), never
-  deleted.
+- If two alerts carry the same rule's tags and name, neither is touched: no
+  updates, no pruning, no deletion. A `DuplicateIgnored` warning and a status
+  failure stay until you delete all but one.
+- Deleting a binding while OpenObserve is unreachable, or its Config is not
+  Ready, waits and retries. Only a deleted Config or Secret lets it finish
+  without cleaning up.
 - Removing a rule, or relabelling its object out of the selector, deletes that
   rule's alert.
 - If the selector matches no object at all, nothing is deleted, and a

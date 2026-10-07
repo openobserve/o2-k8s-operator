@@ -272,6 +272,10 @@ uninstall_operator() {
     echo -e "${YELLOW}Removing webhook configuration...${NC}"
     kubectl delete validatingwebhookconfiguration openobserve-validating-webhook --ignore-not-found=true
 
+    if kubectl get prometheusrulebindings --all-namespaces --no-headers 2>/dev/null | grep -q .; then
+        echo -e "${YELLOW}Note: alerts created by PrometheusRuleBindings stay in OpenObserve. Delete the bindings first (kubectl delete prometheusrulebindings --all -A) while the operator runs to remove them.${NC}"
+    fi
+
     # Stop the operator deployment to prevent it from interfering
     echo -e "${YELLOW}Stopping operator deployment...${NC}"
     kubectl scale deployment/${OPERATOR_NAME} -n ${NAMESPACE} --replicas=0 --timeout=30s 2>/dev/null || true
