@@ -1229,6 +1229,259 @@ spec:
       type: date
       jsonPath: .metadata.creationTimestamp
 ---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: prometheusrulebindings.openobserve.ai
+spec:
+  group: openobserve.ai
+  names:
+    kind: PrometheusRuleBinding
+    listKind: PrometheusRuleBindingList
+    plural: prometheusrulebindings
+    singular: prometheusrulebinding
+    shortNames:
+    - prb
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        description: Syncs the PrometheusRule objects it selects into OpenObserve alerts. The PrometheusRules are read, never written.
+        properties:
+          spec:
+            type: object
+            required:
+            - configRef
+            - ruleSelector
+            - destinations
+            properties:
+              configRef:
+                type: object
+                required:
+                - name
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+              org:
+                type: string
+                description: Organization to create alerts in; defaults to the Config's organization
+              ruleSelector:
+                type: object
+                description: Selects PrometheusRule objects by their metadata labels
+                properties:
+                  matchLabels:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  matchExpressions:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - key
+                      - operator
+                      properties:
+                        key:
+                          type: string
+                        operator:
+                          type: string
+                          enum: [In, NotIn, Exists, DoesNotExist]
+                        values:
+                          type: array
+                          items:
+                            type: string
+              namespaceSelector:
+                type: object
+                description: Namespaces to read rules from; absent means the binding's own namespace, {} means every namespace
+                properties:
+                  matchLabels:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  matchExpressions:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - key
+                      - operator
+                      properties:
+                        key:
+                          type: string
+                        operator:
+                          type: string
+                          enum: [In, NotIn, Exists, DoesNotExist]
+                        values:
+                          type: array
+                          items:
+                            type: string
+              folder:
+                type: string
+                description: Alert folder name, created if missing; empty means the default folder
+              destinations:
+                type: array
+                minItems: 1
+                maxItems: 10
+                items:
+                  type: string
+                  minLength: 1
+              template:
+                type: string
+                description: Overrides every destination's template
+              tags:
+                type: array
+                maxItems: 50
+                items:
+                  type: string
+                  pattern: '^[A-Za-z][A-Za-z0-9_./:-]*$'
+                  maxLength: 200
+              defaults:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    description: Applies to newly created alerts only; default true
+                  perSeries:
+                    type: boolean
+                    description: One alert per returned series, as Prometheus; default true
+                  notifyOnRecovery:
+                    type: boolean
+                    description: Send one notification when a firing alert recovers; default false
+                  period:
+                    type: string
+                    pattern: '^((\d+y)?(\d+w)?(\d+d)?(\d+h)?(\d+m)?(\d+s)?(\d+ms)?|0)$'
+                  frequency:
+                    type: string
+                    pattern: '^((\d+y)?(\d+w)?(\d+d)?(\d+h)?(\d+m)?(\d+s)?(\d+ms)?|0)$'
+                  silence:
+                    type: string
+                    pattern: '^((\d+y)?(\d+w)?(\d+d)?(\d+h)?(\d+m)?(\d+s)?(\d+ms)?|0)$'
+                  severityLabel:
+                    type: string
+                  tagLabels:
+                    type: array
+                    items:
+                      type: string
+                  severityPriority:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                      minimum: 1
+                      maximum: 5
+              overrides:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - alert
+                  properties:
+                    alert:
+                      type: string
+                      minLength: 1
+                    silence:
+                      type: string
+                      pattern: '^((\d+y)?(\d+w)?(\d+d)?(\d+h)?(\d+m)?(\d+s)?(\d+ms)?|0)$'
+                    period:
+                      type: string
+                      pattern: '^((\d+y)?(\d+w)?(\d+d)?(\d+h)?(\d+m)?(\d+s)?(\d+ms)?|0)$'
+                    template:
+                      type: string
+                    destinations:
+                      type: array
+                      maxItems: 10
+                      items:
+                        type: string
+                    priority:
+                      type: integer
+                      minimum: 1
+                      maximum: 5
+                    enabled:
+                      type: boolean
+                    dedupFields:
+                      type: array
+                      items:
+                        type: string
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - type
+                  - status
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    observedGeneration:
+                      type: integer
+                      format: int64
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+              observedGeneration:
+                type: integer
+                format: int64
+              organization:
+                type: string
+              selectedRules:
+                type: integer
+              alertingRules:
+                type: integer
+              recordingRulesSkipped:
+                type: integer
+              managedAlerts:
+                type: integer
+              failedRules:
+                type: integer
+              lastSyncTime:
+                type: string
+                format: date-time
+              failures:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    rule:
+                      type: string
+                    group:
+                      type: string
+                    alert:
+                      type: string
+                    reason:
+                      type: string
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Rules
+      type: integer
+      jsonPath: .status.alertingRules
+    - name: Alerts
+      type: integer
+      jsonPath: .status.managedAlerts
+    - name: Failed
+      type: integer
+      jsonPath: .status.failedRules
+    - name: Ready
+      type: string
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -1329,6 +1582,15 @@ rules:
   verbs:
   - get
   - create
+# PrometheusRules are read, never written
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - prometheusrules
+  verbs:
+  - get
+  - list
+  - watch
 
 # OpenObserve CRDs
 - apiGroups:
@@ -1355,6 +1617,9 @@ rules:
   - pipelines
   - pipelines/status
   - pipelines/finalizers
+  - prometheusrulebindings
+  - prometheusrulebindings/status
+  - prometheusrulebindings/finalizers
   verbs:
   - create
   - delete
