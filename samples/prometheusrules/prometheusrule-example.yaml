@@ -1,0 +1,25 @@
+# A stock prometheus-operator PrometheusRule. Nothing OpenObserve-specific is needed
+# beyond the label the binding selects on.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: example-rules
+  namespace: o2operator
+  labels:
+    openobserve.io/sync: "true"
+spec:
+  groups:
+    - name: example
+      interval: 1m
+      rules:
+        - alert: ExampleAlert
+          expr: vector(1)
+        - alert: InstanceDown
+          expr: up == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.instance }} is down"
+            description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for 5 minutes."
+            runbook_url: https://runbooks.example.com/instance-down

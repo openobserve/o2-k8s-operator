@@ -27,6 +27,7 @@ The OpenObserve Operator allows you to manage OpenObserve Enterprise configurati
 - **Pipeline**: OpenObserve Enterprise data pipeline definitions
 - **Function**: OpenObserve Enterprise VRL transformation functions
 - **Dashboard**: OpenObserve Enterprise dashboard definitions with panels, queries, and visualizations
+- **PrometheusRuleBinding**: Syncs existing prometheus-operator `PrometheusRule` objects into OpenObserve alerts, without modifying them
 
 ## Quick Start
 
@@ -74,6 +75,7 @@ Use templates from the `samples/` directory:
 - `samples/pipelines/` - Pipeline configuration examples
 - `samples/functions/` - Function transformation examples
 - `samples/dashboards/` - Dashboard configuration examples with panels and visualizations
+- `samples/prometheusrules/` - PrometheusRuleBinding examples for syncing existing PrometheusRule objects
 
 **Important:** The sample files have different configRef requirements:
 - Most samples reference `openobserve-main` in their `configRef`
@@ -260,6 +262,7 @@ spec:
   - [Destination Examples](samples/destinations/)
   - [Pipeline Examples](samples/pipelines/)
   - [Function Examples](samples/functions/)
+  - [PrometheusRule Support](samples/prometheusrules/)
   - [Function Template Reference](samples/functions/functions.template)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Manual Deployment](docs/MANUAL_DEPLOYMENT.md)
