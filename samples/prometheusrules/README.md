@@ -74,7 +74,7 @@ o2 promrule render -f prometheusrule-example.yaml --binding prometheusrule-bindi
 | `defaults.period` | `1m` | look-back window |
 | `defaults.frequency` | group `interval` | evaluation frequency override |
 | `defaults.silence` | `0m` | `4h` matches Alertmanager's default repeat interval |
-| `defaults.notifyOnRecovery` | `false` | notify once when an alert recovers |
+| `defaults.notifyOnRecovery` | `false` | notify once when an alert recovers (OpenObserve v1.1.0+; older servers ignore it) |
 | `defaults.severityLabel` | `severity` | label mapped to priority |
 | `defaults.severityPriority` | critical→1, error/high→2, warning→3, info→4, low/none→5 | merged over the built-in map |
 | `defaults.tagLabels` | `[alert_group]` | labels turned into tags |
@@ -106,7 +106,7 @@ belongs with:
 | `openobserve_frequency` | `openobserve.io/frequency` | duration above zero | evaluation frequency |
 | `openobserve_per_series_multi_alert` | `openobserve.io/per-series-multi-alert` | `"true"` / `"false"` | one alert per series, or one for the whole result |
 | `openobserve_dedup_fields` | `openobserve.io/dedup-fields` | comma-separated fields | deduplication fingerprint |
-| `openobserve_notify_on_recovery` | `openobserve.io/notify-on-recovery` | `"true"` / `"false"` | notify once on recovery |
+| `openobserve_notify_on_recovery` | `openobserve.io/notify-on-recovery` | `"true"` / `"false"` | notify once on recovery (OpenObserve v1.1.0+) |
 | `openobserve_priority` | `openobserve.io/priority` | `"1"` to `"5"` | priority, over the severity mapping |
 
 Annotation values must be strings, so quote booleans and numbers. Keys are
