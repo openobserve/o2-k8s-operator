@@ -1,5 +1,6 @@
 # A stock prometheus-operator PrometheusRule. Nothing OpenObserve-specific is needed
-# beyond the label the binding selects on.
+# beyond the label the binding selects on; the openobserve_ settings annotations are
+# optional, and spelt so that Prometheus's default name validation accepts them.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -23,3 +24,5 @@ spec:
             summary: "{{ $labels.instance }} is down"
             description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for 5 minutes."
             runbook_url: https://runbooks.example.com/instance-down
+            openobserve_silence: 30m
+            openobserve_dedup_fields: instance

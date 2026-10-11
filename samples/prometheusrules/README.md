@@ -42,6 +42,7 @@ vector-to-vector matching and `vector(1)` all work.
 | `annotations.summary` | row template |
 | `annotations.description` | description |
 | `annotations.runbook_url` | runbook link |
+| `openobserve_*` settings annotations | alert settings, see [Settings in the rule](#settings-in-the-rule) |
 | other annotations | context attributes |
 | `{{ $labels.x }}`, `{{ $value }}` | `{x}`, `{value}` |
 | recording rules | skipped, counted in status |
@@ -73,11 +74,78 @@ o2 promrule render -f prometheusrule-example.yaml --binding prometheusrule-bindi
 | `defaults.period` | `1m` | look-back window |
 | `defaults.frequency` | group `interval` | evaluation frequency override |
 | `defaults.silence` | `0m` | `4h` matches Alertmanager's default repeat interval |
-| `defaults.notifyOnRecovery` | `false` | notify once when an alert recovers |
+| `defaults.notifyOnRecovery` | `false` | notify once when an alert recovers (OpenObserve v1.1.0+; older servers ignore it) |
 | `defaults.severityLabel` | `severity` | label mapped to priority |
 | `defaults.severityPriority` | critical→1, error/high→2, warning→3, info→4, low/none→5 | merged over the built-in map |
 | `defaults.tagLabels` | `[alert_group]` | labels turned into tags |
-| `overrides[]` | none | per alert name: `silence`, `period`, `template`, `destinations`, `priority`, `enabled`, `dedupFields` |
+| `ruleAnnotations` | `Use` | `Ignore` skips the rules' settings annotations |
+| `overrides[]` | none | per alert name: `silence`, `period`, `frequency` (`0` means unset), `perSeries`, `notifyOnRecovery`, `template`, `destinations`, `priority`, `enabled`, `dedupFields` |
+
+## Settings in the rule
+
+A rule can state its own alert behaviour in its `annotations` (the rule's, not
+the PrometheusRule object's metadata), next to the expression and `for:` it
+belongs with:
+
+```yaml
+- alert: FilesystemAlmostFull
+  expr: filesystem_used_ratio > 0.85
+  for: 10m
+  annotations:
+    summary: "{{ $labels.host_name }} filesystem above 85%"
+    openobserve_silence: 90m
+    openobserve_period: 5m
+    openobserve_per_series_multi_alert: "false"
+    openobserve_dedup_fields: host_name
+```
+
+| Annotation | Also accepted as | Value | Sets |
+|---|---|---|---|
+| `openobserve_silence` | `openobserve.io/silence` | duration, `0` turns silencing off | minimum time between notifications |
+| `openobserve_period` | `openobserve.io/period` | duration above zero | look-back window |
+| `openobserve_frequency` | `openobserve.io/frequency` | duration above zero | evaluation frequency |
+| `openobserve_per_series_multi_alert` | `openobserve.io/per-series-multi-alert` | `"true"` / `"false"` | one alert per series, or one for the whole result |
+| `openobserve_dedup_fields` | `openobserve.io/dedup-fields` | comma-separated fields | deduplication fingerprint |
+| `openobserve_notify_on_recovery` | `openobserve.io/notify-on-recovery` | `"true"` / `"false"` | notify once on recovery (OpenObserve v1.1.0+) |
+| `openobserve_priority` | `openobserve.io/priority` | `"1"` to `"5"` | priority, over the severity mapping |
+
+Annotation values must be strings, so quote booleans and numbers. Keys are
+matched without regard to case.
+
+Each setting is resolved in this order, the last one present winning:
+
+1. the binding's `defaults` (or the group `interval` and `severity` label);
+2. the rule's annotation;
+3. the binding's `overrides[]` entry for the alert.
+
+The platform can therefore still force a value with `overrides[]`, or set
+`ruleAnnotations: Ignore` on the binding to skip these annotations entirely,
+without warnings.
+
+### Which spelling to use
+
+Use the `openobserve_` names. Prometheus's default ("legacy") name validation
+only allows `[a-zA-Z_][a-zA-Z0-9_]*` in annotation names, so a name containing
+`.`, `/` or `-` makes the whole PrometheusRule invalid. That validation is the
+default in Prometheus 2.x and in prometheus-operator's admission webhook
+(`--name-validation-scheme=legacy`), whatever the Prometheus version.
+
+The `openobserve.io/` names work only where every validator uses UTF-8 names,
+such as Prometheus 3.x without that webhook, or with the webhook started with
+`--name-validation-scheme=utf8`. If a rule sets both spellings of one setting,
+the `openobserve.io/` one is used.
+
+### Warnings and upgrades
+
+Settings annotations are not copied into the alert's context attributes. An
+invalid value raises a `TranslationWarning` on the PrometheusRule, and the lower
+layer's value applies. Every `openobserve.io/` key is reserved, so a misspelt one
+is reported too. An `openobserve_` annotation that is not one of the settings
+above is treated as an ordinary annotation.
+
+A rule without settings annotations behaves exactly as before. In v1.3.0,
+annotations with these names were copied into context attributes like any
+other; they now configure the alert instead.
 
 ## Ownership and deletion
 
