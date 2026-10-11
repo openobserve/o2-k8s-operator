@@ -143,6 +143,11 @@ spec:
                       type: integer
                       minimum: 1
                       maximum: 5
+              ruleAnnotations:
+                type: string
+                enum: [Use, Ignore]
+                default: Use
+                description: Use applies a rule's settings annotations (openobserve_* or openobserve.io/*) between defaults and overrides; Ignore skips them
               overrides:
                 type: array
                 items:
@@ -159,6 +164,14 @@ spec:
                     period:
                       type: string
                       pattern: '^((\d+y)?(\d+w)?(\d+d)?(\d+h)?(\d+m)?(\d+s)?(\d+ms)?|0)$'
+                    frequency:
+                      type: string
+                      pattern: '^((\d+y)?(\d+w)?(\d+d)?(\d+h)?(\d+m)?(\d+s)?(\d+ms)?|0)$'
+                      description: Evaluation frequency for this alert; 0 means unset
+                    perSeries:
+                      type: boolean
+                    notifyOnRecovery:
+                      type: boolean
                     template:
                       type: string
                     destinations:
