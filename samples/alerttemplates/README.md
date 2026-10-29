@@ -139,7 +139,7 @@ Templates support dynamic variable substitution using `{variable_name}` syntax:
 kubectl apply -f samples/alerttemplates/http-slack-webhook-template.yaml
 
 # Verify template creation
-kubectl get openobservealerttemplates -n o2operator
+kubectl get alerttemplates.openobserve.ai -n o2operator
 ```
 
 ### Deploy All Templates

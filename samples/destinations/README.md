@@ -76,12 +76,12 @@ kubectl apply -f pipeline-splunk-destination.yaml
 
 ### Listing All Destinations
 ```bash
-kubectl get openobservedestinations -n o2operator
+kubectl get destinations.openobserve.ai -n o2operator
 ```
 
 ### Describing a Destination
 ```bash
-kubectl describe openobservedestination webhook-alert-dest -n o2operator
+kubectl describe destination.openobserve.ai webhook-alert-dest -n o2operator
 ```
 
 ## Troubleshooting

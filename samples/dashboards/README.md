@@ -176,12 +176,12 @@ Supported variable types:
 
 ### Dashboard creation shows "created" but fails
 - Check operator logs: `kubectl logs -n o2operator -l app=openobserve-operator`
-- Verify OpenObserveConfig is Ready: `kubectl get openobserveconfig -n o2operator`
-- Check dashboard status: `kubectl get openobservedashboard -n o2operator`
+- Verify OpenObserveConfig is Ready: `kubectl get config.openobserve.ai -n o2operator`
+- Check dashboard status: `kubectl get dashboard.openobserve.ai -n o2operator`
 
 ### Deletion stuck
 - Check if OpenObserveConfig connection works
-- If stuck, force delete: `kubectl patch openobservedashboard <name> -n o2operator -p '{"metadata":{"finalizers":[]}}' --type=merge`
+- If stuck, force delete: `kubectl patch dashboard.openobserve.ai <name> -n o2operator -p '{"metadata":{"finalizers":[]}}' --type=merge`
 
 ### Duplicate dashboards created
 - Fixed in latest version - now adopts existing dashboards with same title

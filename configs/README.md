@@ -16,7 +16,7 @@ OpenObserve supports two types of authentication, both using HTTP Basic Authenti
 ### 2. User Account Authentication
 - Uses username and password for authentication
 - Standard HTTP Basic Auth
-- Identified by any key other than "token" (e.g., "password", "credentials", or empty)
+- Identified by `key: password`, `key: username` or an empty key (the validating webhook only accepts `token`, `username` or `password`)
 - Full administrative permissions
 - Suitable for human operators and administrative tasks
 
@@ -26,6 +26,7 @@ OpenObserve supports two types of authentication, both using HTTP Basic Authenti
 |------|-------------|-------------------|
 | `service-account-example.yaml` | Example configuration for service account authentication | Service Account |
 | `user-account-example.yaml` | Example configuration for user account authentication | User Account |
+| `cloud-service-account-example.yaml` | Example configuration for OpenObserve Cloud (service account, organization identifier) | Service Account |
 
 ## Creating Secrets
 

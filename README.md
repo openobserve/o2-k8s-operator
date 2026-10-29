@@ -1,41 +1,63 @@
 # OpenObserve Kubernetes Operator
 
-A Kubernetes operator that enables declarative management of resources of OpenObserve Enterprise (alerts, pipelines, functions) as native Kubernetes Custom Resources.
+A Kubernetes operator that enables declarative management of resources of OpenObserve Enterprise and OpenObserve Cloud (alerts, pipelines, functions) as native Kubernetes Custom Resources.
 
 ## Overview
 
-The OpenObserve Operator allows you to manage OpenObserve Enterprise configuration objects using Kubernetes CRDs, enabling GitOps workflows and infrastructure-as-code practices for your observability stack.
+The OpenObserve Operator allows you to manage OpenObserve configuration objects using Kubernetes CRDs, enabling GitOps workflows and infrastructure-as-code practices for your observability stack.
 
 > [!IMPORTANT]
-> This operator is designed to work with **OpenObserve Enterprise** only. It requires Enterprise API features that are not available in the open-source version.
+> This operator works with **OpenObserve Enterprise** and **OpenObserve Cloud** only. It requires API features that are not available in the open-source version. See [Supported OpenObserve editions](#supported-openobserve-editions).
 
-**Note:** This operator manages OpenObserve Enterprise configuration objects only. It does not install or manage the OpenObserve Enterprise application itself.
+**Note:** This operator manages OpenObserve configuration objects only. It does not install or manage the OpenObserve application itself.
 
 ## Features
 
 - **Declarative Configuration**: Define alerts, pipelines, and functions as Kubernetes resources
 - **GitOps Ready**: Version control and manage observability configurations
-- **Multi-Instance Support**: Manage multiple OpenObserve Enterprise instances from a single cluster
+- **Multi-Instance Support**: Manage multiple OpenObserve Enterprise or Cloud instances from a single cluster
 - **Status Reporting**: Real-time sync status and error reporting
 
 ## Supported Resources
 
-- **OpenObserveConfig**: Connection configuration for OpenObserve Enterprise instances
-- **Alert**: OpenObserve Enterprise alert definitions
+- **OpenObserveConfig**: Connection configuration for OpenObserve Enterprise or Cloud instances
+- **Alert**: OpenObserve alert definitions
 - **AlertTemplate**: Templates for formatting alert notifications (HTTP or email)
 - **Destination**: Alert and pipeline destination definitions (HTTP or email)
-- **Pipeline**: OpenObserve Enterprise data pipeline definitions
-- **Function**: OpenObserve Enterprise VRL transformation functions
-- **Dashboard**: OpenObserve Enterprise dashboard definitions with panels, queries, and visualizations
+- **Pipeline**: OpenObserve data pipeline definitions
+- **Function**: OpenObserve VRL transformation functions
+- **Dashboard**: OpenObserve dashboard definitions with panels, queries, and visualizations
 - **PrometheusRuleBinding**: Syncs existing prometheus-operator `PrometheusRule` objects into OpenObserve alerts, without modifying them
+
+## Supported OpenObserve editions
+
+| Edition | `build_type` | Supported |
+|---------|--------------|-----------|
+| OpenObserve Enterprise (self-hosted) | `enterprise` | Yes |
+| OpenObserve Cloud | `cloud` | Yes |
+| OpenObserve open source | `opensource` | No |
+
+The operator reads `build_type` from the instance's `GET /config` endpoint whenever it validates an `OpenObserveConfig`: on create and update (at most once a minute), every 15 minutes while it is valid, and every 5 minutes while it is not. If the edition is not supported:
+
+- the validating webhook rejects the `OpenObserveConfig` with `Please connect to OpenObserve Enterprise or Cloud` (when the instance cannot be reached at admission time the webhook only logs a warning and lets it through), and
+- the config is marked `Ready=False`, and no resources that reference it (alerts, alert templates, destinations, pipelines, functions, dashboards, PrometheusRuleBindings) are synced.
+
+### Connecting to OpenObserve Cloud
+
+- **Endpoint:** `https://api.openobserve.ai`
+- **Organization:** use the organization **identifier** (for example `2Ab3Cd4Ef5Gh6Ij7Kl8Mn9Op0Qr`). It is shown in the Cloud UI and returned by `GET /api/organizations`. The display name also resolves, but the identifier is unique and is what the API paths use.
+- **Credentials:** Cloud uses SSO, so password login is not available. Create a service account in the organization and use its email and token with `key: token`.
+- **Permissions:** the service account needs a role that grants access to the resources the operator manages (alerts, templates, destinations, functions, pipelines, dashboards and folders). A service account without a role can log in, but every API call returns `403 Unauthorized Access` and resources will fail to sync.
+
+See [`configs/cloud-service-account-example.yaml`](configs/cloud-service-account-example.yaml) for a complete example.
 
 ## Quick Start
 
 ### Prerequisites
 
 - Kubernetes 1.25+
-- **OpenObserve Enterprise Instance**
-- OpenObserve Enterprise API credentials
+- **OpenObserve Enterprise or OpenObserve Cloud** (see [Supported OpenObserve editions](#supported-openobserve-editions))
+- OpenObserve API credentials (a service account is recommended)
 
 ### Installation
 
@@ -49,7 +71,7 @@ The OpenObserve Operator allows you to manage OpenObserve Enterprise configurati
 ./deploy.sh --image myrepo/o2operator --tag v1.0.0
 ```
 
-### 2. Configure OpenObserve Enterprise Connection
+### 2. Configure the OpenObserve Connection
 
 Apply the appropriate configuration file from `configs/` based on your environment:
 
@@ -64,7 +86,7 @@ kubectl apply -f configs/test/o2test-config.yaml
 kubectl apply -f configs/prod/o2prod-config.yaml
 ```
 
-**Note**: Edit the configuration files to add your actual OpenObserve Enterprise credentials before applying.
+**Note**: Edit the configuration files to add your actual OpenObserve credentials before applying.
 
 ### 3. Deploy Sample Resources
 
@@ -107,7 +129,7 @@ kubectl apply -f samples/dashboards/minimal-dashboard.yaml
 
 ### Basic Usage
 
-1. Create a Secret with OpenObserve Enterprise credentials:
+1. Create a Secret with OpenObserve service account credentials:
 
 ```yaml
 apiVersion: v1
@@ -117,7 +139,8 @@ metadata:
   namespace: default
 type: Opaque
 stringData:
-  token: "your-api-token"
+  username: "service-account@example.com"   # Service account email
+  token: "your-service-account-token"
 ```
 
 2. Create an OpenObserveConfig:
@@ -129,9 +152,10 @@ metadata:
   name: production
 spec:
   endpoint: https://api.openobserve.ai
-  organization: my-org
+  organization: my-org  # on OpenObserve Cloud, use the organization identifier
   credentialsSecretRef:
     name: o2-credentials
+    key: token  # service account: username + token
 ```
 
 3. Create an Alert:
@@ -252,6 +276,15 @@ spec:
         severity: "high"
 ```
 
+## Admission webhooks
+
+The operator registers a validating webhook for every resource kind (`manifests/04-webhook.yaml`, `failurePolicy: Fail`). Things to be aware of:
+
+- **Apply order matters.** Resources are validated against OpenObserve when they are created or updated, so apply the `Config` (and its Secret) first, then alert templates, then destinations, then alerts and pipelines that use them. A resource whose dependency does not exist yet is rejected; re-apply it once the dependency has synced.
+- **OpenObserve must be reachable.** Alert, alert template and destination requests are rejected while the referenced OpenObserve instance cannot be reached or rejects the credentials. Function requests are rejected when OpenObserve rejects the credentials or when `spec.test` is enabled and the test cannot run; if OpenObserve is only unreachable they are let through with a warning. Dashboard requests are rejected while the referenced `Config` is not `Ready`. Config and pipeline requests only log a warning when OpenObserve cannot be reached.
+- **Configs in use cannot be deleted.** Deleting a `Config` is rejected while alerts or pipelines still reference it.
+- **Realtime pipelines cannot be renamed.** Changing `spec.name` of a realtime pipeline that has already synced is rejected; delete the resource and create a new one with the new name.
+
 ## Documentation
 
 - [Product Requirements Document](PRD.md)
@@ -297,7 +330,7 @@ The uninstall process (`./deploy.sh --uninstall`) will:
 
 ## Additional Resources
 
-- [OpenObserve Enterprise Documentation](https://openobserve.ai/docs/)
+- [OpenObserve Documentation](https://openobserve.ai/docs/)
 - [Kubernetes Operator Pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
 - [Custom Resource Definitions Guide](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
 

@@ -106,7 +106,7 @@ spec:
 kubectl apply -f samples/alerts/real-time-logs-alert.yaml
 
 # Check alert status
-kubectl get openobservealerts -n o2operator
+kubectl get alerts.openobserve.ai -n o2operator
 ```
 
 ### Deploy All Real-Time Alerts
@@ -125,7 +125,7 @@ kubectl apply -f samples/alerts/scheduled-*.yaml
 
 ```bash
 # Get alert status
-kubectl describe openobservealert real-time-logs-alert -n o2operator
+kubectl describe alert.openobserve.ai real-time-logs-alert -n o2operator
 
 # Check alert logs
 kubectl logs -n o2operator deployment/openobserve-operator | grep real-time-logs-alert

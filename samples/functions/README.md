@@ -312,7 +312,7 @@ Tests are automatically executed when:
 kubectl apply -f samples/functions/basic-function.yaml
 
 # Check function status
-kubectl get openobservefunctions -n o2operator
+kubectl get functions.openobserve.ai -n o2operator
 ```
 
 ### Deploy All Functions
@@ -325,7 +325,7 @@ kubectl apply -f samples/functions/*.yaml
 
 ```bash
 # Get function details
-kubectl describe openobservefunction basic-transformation -n o2operator
+kubectl describe function.openobserve.ai basic-transformation -n o2operator
 
 # Check operator logs for function status
 kubectl logs -n o2operator deployment/openobserve-operator | grep function

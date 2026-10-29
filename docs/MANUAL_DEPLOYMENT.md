@@ -81,7 +81,7 @@ To manually uninstall the operator:
 
 ```bash
 # 1. Remove any custom resources (this example removes all in all namespaces)
-kubectl delete openobserveconfigs,openobservealerts,openobservealerttemplates,openobservedestinations,openobservepipelines,openobservefunctions --all -A
+kubectl delete configs.openobserve.ai,alerts.openobserve.ai,alerttemplates.openobserve.ai,destinations.openobserve.ai,pipelines.openobserve.ai,functions.openobserve.ai --all -A
 
 # 2. Delete webhook configuration
 kubectl delete -f manifests/04-webhook.yaml

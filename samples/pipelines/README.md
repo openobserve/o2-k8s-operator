@@ -419,7 +419,7 @@ nodes:
 kubectl apply -f samples/pipelines/real-time-pipeline1.yaml
 
 # Check pipeline status
-kubectl get openobservepipelines -n o2operator
+kubectl get pipelines.openobserve.ai -n o2operator
 ```
 
 ### Deploy All Pipelines of a Type
@@ -439,7 +439,7 @@ kubectl apply -f samples/pipelines/promql-query-*.yaml
 
 ```bash
 # Get pipeline details
-kubectl describe openobservepipeline real-time-pipeline1 -n o2operator
+kubectl describe pipeline.openobserve.ai real-time-pipeline1 -n o2operator
 
 # Check operator logs
 kubectl logs -n o2operator deployment/openobserve-operator | grep pipeline
@@ -483,7 +483,7 @@ kubectl logs -n o2operator deployment/openobserve-operator | grep pipeline
 
 1. **Check Pipeline Status**:
    ```bash
-   kubectl get openobservepipeline <name> -n o2operator -o yaml
+   kubectl get pipeline.openobserve.ai <name> -n o2operator -o yaml
    ```
 
 2. **Verify Source Stream**: Ensure source stream exists and has data

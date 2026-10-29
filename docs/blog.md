@@ -7,7 +7,7 @@
 
 ## TL;DR
 
-The OpenObserve Kubernetes Operator (o2-k8s-operator) brings the power of Infrastructure as Code to your observability stack. Manage alerts, pipelines, functions, destinations, and templates as native Kubernetes resources, enabling GitOps workflows and declarative configuration management for OpenObserve Enterprise.
+The OpenObserve Kubernetes Operator (o2-k8s-operator) brings the power of Infrastructure as Code to your observability stack. Manage alerts, pipelines, functions, destinations, and templates as native Kubernetes resources, enabling GitOps workflows and declarative configuration management for OpenObserve Enterprise and OpenObserve Cloud.
 
 ---
 
@@ -27,7 +27,7 @@ What if you could manage your entire observability stack the same way you manage
 
 ## Enter the OpenObserve Kubernetes Operator
 
-The o2-k8s-operator bridges the gap between Kubernetes-native workflows and OpenObserve Enterprise, transforming observability management into a first-class Kubernetes experience.
+The o2-k8s-operator bridges the gap between Kubernetes-native workflows and OpenObserve Enterprise and Cloud, transforming observability management into a first-class Kubernetes experience.
 
 ### What Makes It Special?
 
@@ -38,7 +38,7 @@ Define alerts, pipelines, functions, templates, and destinations as YAML manifes
 Version control everything. Review changes through pull requests. Automate deployments with tools like ArgoCD, Flux, or your CI/CD pipeline of choice.
 
 **🏢 Multi-Instance Support**
-Manage multiple OpenObserve Enterprise instances (dev, test, prod) from a single Kubernetes cluster with isolated configurations.
+Manage multiple OpenObserve Enterprise or Cloud instances (dev, test, prod) from a single Kubernetes cluster with isolated configurations.
 
 **📊 Real-Time Status Tracking**
 Get instant feedback on sync status, errors, and resource health through standard Kubernetes status conditions.
@@ -51,7 +51,7 @@ The operator introduces six powerful Custom Resource Definitions (CRDs):
 
 ### 1. **OpenObserveConfig** - Connection Management
 
-Connect to your OpenObserve Enterprise instances with secure credential management:
+Connect to your OpenObserve Enterprise or Cloud instances with secure credential management:
 
 ```yaml
 apiVersion: openobserve.ai/v1alpha1
@@ -354,7 +354,7 @@ kubectl get alerts
 kubectl describe alert high-cpu-alert
 ```
 
-That's it! Your alert is now managed declaratively and synced with OpenObserve Enterprise.
+That's it! Your alert is now managed declaratively and synced with OpenObserve.
 
 ---
 
@@ -364,7 +364,7 @@ That's it! Your alert is now managed declaratively and synced with OpenObserve E
 The operator continuously ensures your desired state (Kubernetes resources) matches actual state (OpenObserve configurations):
 
 1. **Watch**: Monitors Kubernetes API for resource changes
-2. **Reconcile**: Syncs changes to OpenObserve Enterprise
+2. **Reconcile**: Syncs changes to OpenObserve Enterprise or Cloud
 3. **Update Status**: Reports back success or errors
 4. **Retry**: Automatic retry with exponential backoff on failures
 
@@ -423,7 +423,7 @@ Join the growing community of teams adopting observability-as-code practices wit
 
 ---
 
-**About OpenObserve**: OpenObserve is a cloud-native observability platform designed for logs, metrics, and traces. OpenObserve Enterprise provides advanced features including APIs for automation, which the o2-k8s-operator leverages to provide Kubernetes-native resource management.
+**About OpenObserve**: OpenObserve is a cloud-native observability platform designed for logs, metrics, and traces. OpenObserve Enterprise and OpenObserve Cloud provide advanced features including APIs for automation, which the o2-k8s-operator leverages to provide Kubernetes-native resource management.
 
 ---
 

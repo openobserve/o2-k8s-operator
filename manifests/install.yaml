@@ -2017,7 +2017,7 @@ webhooks:
     apiVersions:
     - v1alpha1
     resources:
-    - openobservealerts
+    - alerts
     operations:
     - CREATE
     - UPDATE
@@ -2042,7 +2042,7 @@ webhooks:
     apiVersions:
     - v1alpha1
     resources:
-    - openobservepipelines
+    - pipelines
     operations:
     - CREATE
     - UPDATE
@@ -2059,7 +2059,7 @@ webhooks:
     service:
       name: openobserve-webhook-service
       namespace: o2operator
-      path: /validate-openobserve-ai-v1alpha1-openobserveconfig
+      path: /validate-openobserve-ai-v1alpha1-config
     caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJekNDQWd1Z0F3SUJBZ0lVSWtnQWJ3TXlOMnBwWEV1Njc0VUhrSVZXRHFVd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0lURWZNQjBHQTFVRUF3d1diM0JsYm05aWMyVnlkbVV0ZDJWaWFHOXZheTFqWVRBZUZ3MHlOakF4TVRReApOREE0TlRoYUZ3MHpOakF4TVRJeE5EQTROVGhhTUNFeEh6QWRCZ05WQkFNTUZtOXdaVzV2WW5ObGNuWmxMWGRsClltaHZiMnN0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3Z2dFS0FvSUJBUURDbHRNOWhyc2kKem5aZWdyV0xIY2N1UGhFakhqRThpRm5BclZ0NjlhZzBzc1h4YWxPVWpndVBTWVJROWdIbEc0OUt1UnhvTWlLRQpRM3R0UHVUTkJGQW9ESGZ1YytoRENBSUtBdERXNFRrYVZwUktFYjlvVThORHltaHdZblNzazI0TERiczdNWXhvCmttQzFGdUd3MHdUUGF5QUhyQ3FtcExIbVNURmNmZ2Y5WmE0UEVFeFpXSzFYSlNYTmNxSHIxRUMzMkZCdUdFcjQKMGJ1NnFIcG9vTUgxTUNVYlF6M29TdS90NDJiTmFSWEQwUDYrcDhuazhMSnFNT3ZyVUdxalpyZGd6ZEF1YXZMcwpXN2I1TjV2eW1OVStzbTlBRm5lR1VHSm0wWTJSam1YSmxyM2lOWnR4c0o2VGk4SW1oRDZFWEc5bmNkckdKayt1CmxNTHl3UVVHU3lLTkFnTUJBQUdqVXpCUk1CMEdBMVVkRGdRV0JCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1kKNXpBZkJnTlZIU01FR0RBV2dCUWZ6OHZDRXVwTnk5Y21wN09nRzcreHZJQ1k1ekFQQmdOVkhSTUJBZjhFQlRBRApBUUgvTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFBSFllbXlENkdUMGpWbkZnWFlhandRbEIxdnc3UzdjUnpwCjYwQnY1bk9EUDd0VkJSR3ZUcGR5Vnh2MHhjZHlmMVVXNEF4YzArMEpWLzMvc21seWdTQlJENXZsVWpZSXNVU2gKYWlQM1FWb2lGLzN5Vi9pSVdXOFVDSko2VDRaOXlzNDNuc0Y5bk9XYkxCYUpraDl5Mk1oVmRVc1QxWDVpV3p4VApFTnlGWExlL3R2WmlHcUNLeWlacWlBOFdaUHMyMmVCOXNMSGlCTTNBeHZBdlJmU296V29lREJlbmJqamw3c0kwCkNLODJ2aWxPZFBmcnNnMkNabWk1TGZVVXlETEZ4R1Q4d29rZjR3TCt6aXcrdkFJZ21DU25kNXZwQTYrSDlLYVQKenNGQVg0aFB5SmRYUTk0RSsya3ByaHBSQkEvZHRiK1ZlbXJTeExUVFhBZVMzM3gvU1hhagotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
   rules:
   - apiGroups:
@@ -2067,7 +2067,7 @@ webhooks:
     apiVersions:
     - v1alpha1
     resources:
-    - openobserveconfigs
+    - configs
     operations:
     - CREATE
     - UPDATE
@@ -2092,7 +2092,7 @@ webhooks:
     apiVersions:
     - v1alpha1
     resources:
-    - openobservefunctions
+    - functions
     operations:
     - CREATE
     - UPDATE
@@ -2117,7 +2117,7 @@ webhooks:
     apiVersions:
     - v1alpha1
     resources:
-    - openobservealerttemplates
+    - alerttemplates
     operations:
     - CREATE
     - UPDATE
@@ -2142,7 +2142,7 @@ webhooks:
     apiVersions:
     - v1alpha1
     resources:
-    - openobservedestinations
+    - destinations
     operations:
     - CREATE
     - UPDATE
@@ -2167,7 +2167,7 @@ webhooks:
     apiVersions:
     - v1alpha1
     resources:
-    - openobservedashboards
+    - dashboards
     operations:
     - CREATE
     - UPDATE

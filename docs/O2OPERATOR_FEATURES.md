@@ -2,7 +2,7 @@
 
 ## Overview
 
-The OpenObserve Kubernetes Operator provides a comprehensive set of features for managing OpenObserve Enterprise resources through Kubernetes-native Custom Resources. This document outlines all available features organized by category, including alerts, pipelines, functions, and configurations.
+The OpenObserve Kubernetes Operator provides a comprehensive set of features for managing OpenObserve Enterprise and OpenObserve Cloud resources through Kubernetes-native Custom Resources. This document outlines all available features organized by category, including alerts, pipelines, functions, and configurations.
 
 ## Core Features
 
