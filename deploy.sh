@@ -272,7 +272,7 @@ uninstall_operator() {
     echo -e "${YELLOW}Removing webhook configuration...${NC}"
     kubectl delete validatingwebhookconfiguration openobserve-validating-webhook --ignore-not-found=true
 
-    if kubectl get prometheusrulebindings --all-namespaces --no-headers 2>/dev/null | grep -q .; then
+    if kubectl get prometheusrulebindings.openobserve.ai --all-namespaces --no-headers 2>/dev/null | grep -q .; then
         echo -e "${YELLOW}Note: alerts created by PrometheusRuleBindings stay in OpenObserve. Delete the bindings first (kubectl delete prometheusrulebindings --all -A) while the operator runs to remove them.${NC}"
     fi
 
@@ -287,14 +287,14 @@ uninstall_operator() {
     echo -e "${YELLOW}Checking for stuck resources and removing finalizers...${NC}"
 
     # Process each resource type
-    remove_finalizers_if_stuck "Alert" "alerts" "alert"
-    remove_finalizers_if_stuck "Pipeline" "pipelines" "pipeline"
-    remove_finalizers_if_stuck "Function" "functions" "function"
-    remove_finalizers_if_stuck "Destination" "destinations" "destination"
-    remove_finalizers_if_stuck "AlertTemplate" "alerttemplates" "alerttemplate"
-    remove_finalizers_if_stuck "Dashboard" "dashboards" "dashboard"
-    remove_finalizers_if_stuck "PrometheusRuleBinding" "prometheusrulebindings" "prometheusrulebinding"
-    remove_finalizers_if_stuck "Config" "configs" "config"
+    remove_finalizers_if_stuck "Alert" "alerts.openobserve.ai" "alerts.openobserve.ai"
+    remove_finalizers_if_stuck "Pipeline" "pipelines.openobserve.ai" "pipelines.openobserve.ai"
+    remove_finalizers_if_stuck "Function" "functions.openobserve.ai" "functions.openobserve.ai"
+    remove_finalizers_if_stuck "Destination" "destinations.openobserve.ai" "destinations.openobserve.ai"
+    remove_finalizers_if_stuck "AlertTemplate" "alerttemplates.openobserve.ai" "alerttemplates.openobserve.ai"
+    remove_finalizers_if_stuck "Dashboard" "dashboards.openobserve.ai" "dashboards.openobserve.ai"
+    remove_finalizers_if_stuck "PrometheusRuleBinding" "prometheusrulebindings.openobserve.ai" "prometheusrulebindings.openobserve.ai"
+    remove_finalizers_if_stuck "Config" "configs.openobserve.ai" "configs.openobserve.ai"
 
 
     # Now delete all resources
@@ -306,25 +306,25 @@ uninstall_operator() {
 
     # Try to delete all custom resources (with timeout to prevent hanging)
     echo -e "${YELLOW}Deleting custom resources...${NC}"
-    kubectl delete alerts --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete pipelines --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete functions --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete destinations --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete alerttemplates --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete dashboards --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete prometheusrulebindings --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
-    kubectl delete configs --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete alerts.openobserve.ai --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete pipelines.openobserve.ai --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete functions.openobserve.ai --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete destinations.openobserve.ai --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete alerttemplates.openobserve.ai --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete dashboards.openobserve.ai --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete prometheusrulebindings.openobserve.ai --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
+    kubectl delete configs.openobserve.ai --all --all-namespaces --ignore-not-found=true --timeout=10s 2>/dev/null || true
 
     # Final check - if any resources still exist with finalizers, force remove them
     echo -e "${YELLOW}Final cleanup check...${NC}"
-    for resource_type in alerts pipelines functions destinations alerttemplates dashboards prometheusrulebindings configs; do
+    for resource_type in alerts.openobserve.ai pipelines.openobserve.ai functions.openobserve.ai destinations.openobserve.ai alerttemplates.openobserve.ai dashboards.openobserve.ai prometheusrulebindings.openobserve.ai configs.openobserve.ai; do
         remaining=$(kubectl get $resource_type --all-namespaces --no-headers 2>/dev/null | wc -l)
         if [ "$remaining" -gt 0 ]; then
             echo -e "${YELLOW}  Force removing remaining $resource_type resources...${NC}"
             kubectl get $resource_type --all-namespaces -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name --no-headers 2>/dev/null | \
             while read namespace name; do
                 if [ -n "$namespace" ] && [ -n "$name" ]; then
-                    kubectl patch ${resource_type%s} $name -n $namespace \
+                    kubectl patch $resource_type $name -n $namespace \
                         -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
                 fi
             done
